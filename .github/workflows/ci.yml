@@ -12,7 +12,7 @@ jobs:
     
     services:
       postgres:
-        image: postgres:15
+        image: postgres:16-alpine
         env:
           POSTGRES_USER: user
           POSTGRES_PASSWORD: password
@@ -43,7 +43,7 @@ jobs:
     - name: Run Tests
       env:
         DATABASE_URL: postgresql://user:password@localhost:5432/agentic_commerce_test
-        APP_ENV: testing
+        APP_ENV: test
         JWT_SECRET: test-secret-key-123
         OPERATOR_USERNAME: admin
         OPERATOR_PASSWORD: password

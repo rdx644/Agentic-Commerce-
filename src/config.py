@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
 
     # ── Security ──────────────────────────────────────────────────────────
-    app_env: Literal["development", "test", "production"] = "development"
+    app_env: Literal["development", "test", "testing", "production"] = "development"
     jwt_secret: str = "change-me-in-production"
     capability_token_ttl_seconds: int = 300  # 5 minutes
     operator_username: str = "operator"
