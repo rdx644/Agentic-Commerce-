@@ -294,9 +294,20 @@ tests/test_e2e_checkout.py ...                                           [100%]
 
 ---
 
-## 📊 Operator Dashboard
+## 📊 Operator Dashboard & Live Demo
 
-The dashboard provides real-time visibility into autonomous transactions:
+The dashboard provides real-time visibility into autonomous transactions with zero-latency telemetry:
+
+### 🔑 Demo Login Credentials
+For evaluators, judges, and reviewers accessing the live deployed dashboard:
+
+| Field | Demo Value |
+| :--- | :--- |
+| **Username** | `operator` |
+| **Password** | `SuperSecureOperatorAdmin2026!` |
+
+> [!NOTE]
+> In custom self-hosted deployments, operator credentials can be modified via the `OPERATOR_USERNAME` and `OPERATOR_PASSWORD` environment variables.
 
 * **Live Audit Trail**: Chronological event logs with session hashes, action types, status badges, and execution rationale.
 * **Interactive Checkout Simulator**: Natural language testing console to execute and monitor conversational agent purchases.
