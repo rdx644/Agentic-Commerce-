@@ -25,7 +25,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: OPERATOR_USERNAME
-        value: operator
+        value: Razorpay
       - key: OPERATOR_PASSWORD
         sync: false
       - key: RAZORPAY_KEY_ID

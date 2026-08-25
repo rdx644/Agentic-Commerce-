@@ -31,8 +31,8 @@ class Settings(BaseSettings):
     app_env: Literal["development", "test", "testing", "production"] = "development"
     jwt_secret: str = "change-me-in-production"
     capability_token_ttl_seconds: int = 300  # 5 minutes
-    operator_username: str = "operator"
-    operator_password: str = ""
+    operator_username: str = "Razorpay"
+    operator_password: str = "RazorPay@123456#"
 
     # ── Database ──────────────────────────────────────────────────────────
     database_url: str = "postgresql://postgres:postgres@localhost:5432/agentic_commerce"
