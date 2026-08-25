@@ -1,9 +1,24 @@
 import os
+import socket
 import pytest
 
 # Ensure testing settings are set before test suite execution
 os.environ["APP_ENV"] = "test"
-os.environ.setdefault("DATABASE_URL", "postgresql://user:password@localhost:5432/agentic_commerce_test")
+
+# Auto-detect local postgres port (5433 for local docker compose, 5432 for CI runner)
+if "DATABASE_URL" not in os.environ:
+    def is_port_open(port: int) -> bool:
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=0.5):
+                return True
+        except (socket.timeout, ConnectionRefusedError, OSError):
+            return False
+
+    if is_port_open(5433):
+        os.environ["DATABASE_URL"] = "postgresql://postgres:postgres@127.0.0.1:5433/agentic_commerce"
+    else:
+        os.environ["DATABASE_URL"] = "postgresql://user:password@127.0.0.1:5432/agentic_commerce_test"
+
 os.environ.setdefault("JWT_SECRET", "super-secret-key-for-testing-at-least-32-chars-long")
 os.environ.setdefault("OPERATOR_USERNAME", "admin")
 os.environ.setdefault("OPERATOR_PASSWORD", "test-operator-password-123")
