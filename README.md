@@ -10,13 +10,12 @@
 [![Tests](https://img.shields.io/badge/Tests-40%2F40%20Passing-brightgreen?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-An enterprise-grade, bounded, explainable **Agentic Checkout & Payment Orchestration System**. Built with zero-trust capability tokens, cryptographic catalog snapshotting, atomic budget ledgers, dynamic upsell intelligence, and a real-time **Architectural Blueprint (Cyanotype)** audit dashboard.
 ---
 
 ## 📌 Table of Contents
 
 - [About the Project](#-about-the-project)
-- [Core Architecture & Security Design](#-core-architecture--security-design)
+- [Core Architecture & Security Design](#-core-architecture--security-design) 
 - [System Architecture Flow](#-system-architecture-flow)
 - [Tech Stack & Decision Framework](#-tech-stack--decision-framework)
 - [Project Directory Structure](#-project-directory-structure)
