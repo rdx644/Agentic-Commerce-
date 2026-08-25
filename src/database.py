@@ -133,8 +133,8 @@ CREATE INDEX IF NOT EXISTS idx_campaign_id ON campaign_sessions(campaign_id);
 """
 
 
-def init_db() -> None:
-    """Initialize the connection pool and create all tables if they don't exist."""
+def init_db(max_retries: int = 10, retry_delay: float = 2.0) -> None:
+    """Initialize the connection pool and create all tables if they don't exist with cloud startup retries."""
     global _pool
     settings = get_settings()
     
@@ -147,12 +147,24 @@ def init_db() -> None:
             kwargs={"row_factory": dict_row}
         )
     
-    # Run migrations / create tables
-    with _pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(SCHEMA_SQL)
-        conn.commit()
-    logger.info("PostgreSQL Database initialized")
+    # Run migrations / create tables with cloud startup retries
+    last_err = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            with _pool.connection(timeout=10.0) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(SCHEMA_SQL)
+                conn.commit()
+            logger.info("PostgreSQL Database initialized successfully")
+            return
+        except Exception as exc:
+            last_err = exc
+            logger.warning(f"Database connection attempt {attempt}/{max_retries} failed: {exc}. Retrying in {retry_delay}s...")
+            import time
+            time.sleep(retry_delay)
+            
+    if last_err:
+        raise last_err
 
 
 def close_db() -> None:
