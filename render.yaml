@@ -41,5 +41,5 @@ databases:
   - name: agentic-commerce-db
     plan: free
     databaseName: agentic_commerce
-    user: postgres
+    user: Rdx644
     region: oregon
