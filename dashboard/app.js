@@ -81,40 +81,96 @@ function connectSSE() {
     };
 }
 
-// ── Audit Trail ─────────────────────────────────────────────────────────────
+// ── Virtual Scroll Audit Trail ──────────────────────────────────────────────
+const ROW_HEIGHT = 48;
+let isVirtualScrollScheduled = false;
 
 function addAuditEntry(entry) {
     auditEntries.unshift(entry);
-    if (auditEntries.length > 200) auditEntries.pop();
-    renderAuditRow(entry, true);
+    if (auditEntries.length > 1000) auditEntries.pop();
+    scheduleVirtualScroll();
 }
 
-function renderAuditRow(entry, isNew = false) {
-    const tbody = document.getElementById('audit-tbody');
-    const tr = document.createElement('tr');
-    if (isNew) tr.classList.add('new-row');
+function scheduleVirtualScroll() {
+    if (isVirtualScrollScheduled) return;
+    isVirtualScrollScheduled = true;
+    requestAnimationFrame(() => {
+        renderVirtualAuditTrail();
+        isVirtualScrollScheduled = false;
+    });
+}
 
+function renderVirtualAuditTrail() {
+    const wrapper = document.querySelector('.audit-table-wrapper');
+    const tbody = document.getElementById('audit-tbody');
+    if (!wrapper || !tbody) return;
+
+    const scrollTop = wrapper.scrollTop || 0;
+    const clientHeight = wrapper.clientHeight || 480;
+    const totalCount = auditEntries.length;
+
+    if (totalCount === 0) {
+        tbody.replaceChildren();
+        return;
+    }
+
+    const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 2);
+    const visibleCount = Math.ceil(clientHeight / ROW_HEIGHT) + 4;
+    const endIndex = Math.min(totalCount, startIndex + visibleCount);
+
+    const topPadding = startIndex * ROW_HEIGHT;
+    const bottomPadding = Math.max(0, (totalCount - endIndex) * ROW_HEIGHT);
+
+    const fragment = document.createDocumentFragment();
+
+    if (topPadding > 0) {
+        const topSpacer = document.createElement('tr');
+        topSpacer.className = 'audit-spacer-row';
+        const td = document.createElement('td');
+        td.colSpan = 6;
+        td.style.height = `${topPadding}px`;
+        topSpacer.appendChild(td);
+        fragment.appendChild(topSpacer);
+    }
+
+    for (let i = startIndex; i < endIndex; i++) {
+        fragment.appendChild(createAuditRowElement(auditEntries[i]));
+    }
+
+    if (bottomPadding > 0) {
+        const bottomSpacer = document.createElement('tr');
+        bottomSpacer.className = 'audit-spacer-row';
+        const td = document.createElement('td');
+        td.colSpan = 6;
+        td.style.height = `${bottomPadding}px`;
+        bottomSpacer.appendChild(td);
+        fragment.appendChild(bottomSpacer);
+    }
+
+    tbody.replaceChildren(fragment);
+}
+
+function createAuditRowElement(entry) {
+    const tr = document.createElement('tr');
     tr.tabIndex = 0;
     tr.addEventListener('click', () => openSessionDetail(entry.session_id));
     tr.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ') openSessionDetail(entry.session_id);
     });
 
-    // Time: format as "H:MM:SS AM" with non-breaking spaces to prevent wrapping
     const time = entry.created_at
         ? new Date(entry.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }).replace(/\s/g, '\u00A0')
         : '—';
     const sessionShort = (entry.session_id || '').substring(0, 16);
-    const session = makeElement('td', 'session-cell', `${sessionShort}…`);
+    const session = makeElement('td', 'session-cell col-session', `${sessionShort}…`);
     session.title = entry.session_id || '';
-    const actionCell = document.createElement('td');
+    
+    const actionCell = makeElement('td', 'col-action');
     actionCell.append(makeElement('span', `action-badge ${getActionClass(entry.action)}`, entry.action));
 
-    // Reason: full text in title for tooltip
-    const reason = makeElement('td', 'reason-cell', entry.reason || '—');
+    const reason = makeElement('td', 'reason-cell col-reason', entry.reason || '—');
     reason.title = entry.reason || '';
 
-    // Decision: handle null/empty gracefully
     let decisionClass = '';
     let decisionText = '—';
     if (entry.decision === 'PASS') {
@@ -125,7 +181,6 @@ function renderAuditRow(entry, isNew = false) {
         decisionText = 'REJECT';
     }
 
-    // Amount: consistent formatting - ₹X,XXX (no decimals)
     let amountText = '—';
     if (entry.amount_paise) {
         const rupees = Math.round(entry.amount_paise / 100);
@@ -133,15 +188,14 @@ function renderAuditRow(entry, isNew = false) {
     }
 
     tr.append(
-        makeElement('td', 'time-cell', time),
+        makeElement('td', 'time-cell col-time', time),
         session,
         actionCell,
-        makeElement('td', decisionClass, decisionText),
-        makeElement('td', 'amount-cell', amountText),
+        makeElement('td', `${decisionClass} col-decision`, decisionText),
+        makeElement('td', 'amount-cell col-amount', amountText),
         reason,
     );
-    tbody.insertBefore(tr, tbody.firstChild);
-    while (tbody.children.length > 100) tbody.removeChild(tbody.lastChild);
+    return tr;
 }
 
 function getActionClass(action) {
@@ -160,16 +214,14 @@ async function refreshTrail() {
     const action = document.getElementById('filter-action').value;
     const failure = document.getElementById('filter-failure').value;
 
-    let url = '/audit/trail?limit=50';
+    let url = '/audit/trail?limit=100';
     if (action) url += `&action=${action}`;
     if (failure) url += `&failure_class=${failure}`;
 
     try {
         const resp = await apiFetch(url);
-        const entries = await resp.json();
-        const tbody = document.getElementById('audit-tbody');
-        tbody.replaceChildren();
-        entries.forEach(e => renderAuditRow(e, false));
+        auditEntries = await resp.json();
+        scheduleVirtualScroll();
     } catch (e) {
         console.error('Failed to refresh trail:', e);
     }
@@ -512,7 +564,19 @@ async function openSessionDetail(sessionId) {
     const overlay = document.getElementById('modal-overlay');
     const body = document.getElementById('modal-body');
     overlay.classList.add('open');
-    body.replaceChildren(makeElement('p', 'modal-message', 'Loading session detail…'));
+    
+    // Skeleton Pulse for lazy-load instant visual feedback
+    const skeleton = document.createElement('div');
+    skeleton.className = 'modal-skeleton';
+    skeleton.innerHTML = `
+        <h3 class="session-title" style="color: var(--measure-cyan); margin-bottom: 8px;">SESSION PROVENANCE: ${sessionId}</h3>
+        <p style="color: rgba(255,255,255,0.6); font-size: 11px; margin-bottom: 16px;">Querying immutable cryptographic audit ledger...</p>
+        <div class="skeleton-pulse" style="width: 90%;"></div>
+        <div class="skeleton-pulse" style="width: 70%;"></div>
+        <div class="skeleton-pulse" style="width: 80%;"></div>
+        <div class="skeleton-pulse" style="width: 50%;"></div>
+    `;
+    body.replaceChildren(skeleton);
 
     try {
         const resp = await apiFetch(`/audit/session/${sessionId}`);
@@ -589,6 +653,12 @@ document.addEventListener('DOMContentLoaded', () => {
     connectSSE();
     refreshTrail();
     initBlueprintCoordinates();
+    
+    const tableWrapper = document.querySelector('.audit-table-wrapper');
+    if (tableWrapper) {
+        tableWrapper.addEventListener('scroll', scheduleVirtualScroll, { passive: true });
+    }
+
     document.getElementById('run-campaign').addEventListener('click', runCampaign);
     document.getElementById('send-checkout').addEventListener('click', simulateCheckout);
     document.getElementById('checkout-input').addEventListener('keydown', (event) => {

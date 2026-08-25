@@ -307,36 +307,39 @@ p, span, label, input, select, button, table {
 .stat-label {
     font-size: 10px;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.75);
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     margin-bottom: 8px;
 }
 
 .stat-value {
-    font-size: 22px;
-    font-weight: 700;
+    font-size: 26px;
+    font-weight: 800;
     color: #ffffff;
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
 }
 
-/* Status Colors aligned to Blueprint Specs */
+/* High-Contrast Luminous Status Palette */
 .stat-pass {
-    color: var(--measure-cyan) !important;
-    text-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+    color: #00FF9D !important;
+    text-shadow: 0 0 12px rgba(0, 255, 157, 0.55);
 }
 
 .stat-reject {
-    color: var(--redline-accent) !important;
-    text-shadow: 0 0 10px rgba(255, 51, 51, 0.4);
+    color: #FF3344 !important;
+    text-shadow: 0 0 12px rgba(255, 51, 68, 0.55);
 }
 
 .stat-money {
-    color: var(--measure-cyan) !important;
+    color: #00FFFF !important;
+    text-shadow: 0 0 12px rgba(0, 255, 255, 0.55);
 }
 
 .stat-warn {
-    color: var(--redline-accent) !important;
+    color: #FFB800 !important;
+    text-shadow: 0 0 12px rgba(255, 184, 0, 0.55);
 }
 
 /* ── Main Wireframe Grid ────────────────────────────────────────────────── */
@@ -557,60 +560,91 @@ p, span, label, input, select, button, table {
 
 .audit-table-wrapper {
     overflow-x: auto;
+    overflow-y: auto;
     max-height: 480px;
     background: var(--wireframe-bg);
+    position: relative;
+    contain: layout paint;
 }
 
 .audit-table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     font-size: 11px;
     text-align: left;
 }
+
+/* Table Column Width Calibration */
+.col-time     { width: 110px; }
+.col-session  { width: 150px; }
+.col-action   { width: 160px; }
+.col-decision { width: 95px; }
+.col-amount   { width: 110px; }
+.col-reason   { width: auto; min-width: 0; }
 
 /* Table Headers: Solid 1px White Bottom Border + Blueprint Solid BG */
 .audit-table thead {
     position: sticky;
     top: 0;
     background: #002b55;
-    z-index: 2;
+    z-index: 3;
     border-bottom: 2px solid rgba(255, 255, 255, 0.8);
 }
 
 .audit-table th {
-    padding: 14px 18px;
+    padding: 12px 16px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: #ffffff;
     border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Virtual Scroll Spacer Rows */
+.audit-spacer-row td {
+    padding: 0 !important;
+    border: none !important;
+    height: 0;
 }
 
 /* Standard Rows: 1px Dashed Bottom Border, Exactly 48px Height */
-.audit-table tbody tr {
+.audit-table tbody tr:not(.audit-spacer-row) {
     height: 48px;
     min-height: 48px;
     border-bottom: 1px dashed rgba(255, 255, 255, 0.2);
     transition: var(--trans-draft);
 }
 
-.audit-table tbody tr:hover {
+.audit-table tbody tr:not(.audit-spacer-row):hover {
     background: rgba(0, 255, 255, 0.08);
+    cursor: pointer;
 }
 
 .audit-table td {
-    padding: 14px 18px;
+    padding: 12px 16px;
     color: var(--drafting-white);
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .audit-table td.time-cell {
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.65);
     font-size: 11px;
 }
 
+.audit-table td.session-cell {
+    font-family: var(--font-mono);
+    color: var(--measure-cyan);
+}
+
 .audit-table td.reason-cell {
-    max-width: 380px;
+    min-width: 0;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -618,30 +652,45 @@ p, span, label, input, select, button, table {
 }
 
 /* Decision Badges: Blueprint Precision */
-.badge-pass {
-    border: 1px solid var(--measure-cyan) !important;
-    color: var(--measure-cyan) !important;
-    background: rgba(0, 255, 255, 0.1) !important;
+.badge-pass, .decision-pass {
+    border: 1px solid #00FF9D !important;
+    color: #00FF9D !important;
+    background: rgba(0, 255, 157, 0.12) !important;
     padding: 2px 6px;
     font-weight: 700;
     display: inline-block;
 }
 
-.badge-reject {
-    border: 1px solid var(--redline-accent) !important;
-    color: var(--redline-accent) !important;
-    background: rgba(255, 51, 51, 0.1) !important;
+.badge-reject, .decision-reject {
+    border: 1px solid #FF3344 !important;
+    color: #FF3344 !important;
+    background: rgba(255, 51, 68, 0.12) !important;
     padding: 2px 6px;
     font-weight: 700;
     display: inline-block;
 }
 
-.action-pill {
-    border: 1px solid rgba(255, 255, 255, 0.3);
+.action-pill, .action-badge {
+    border: 1px solid rgba(255, 255, 255, 0.35);
     padding: 2px 6px;
     font-size: 10px;
     color: #ffffff;
     display: inline-block;
+    letter-spacing: 0.05em;
+}
+
+/* Skeleton Wave for Lazy Loading */
+.skeleton-pulse {
+    height: 14px;
+    margin-bottom: 12px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(0, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.05) 75%);
+    background-size: 200% 100%;
+    animation: skeletonWave 1.4s ease-in-out infinite;
+}
+
+@keyframes skeletonWave {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
 
 /* ── Modal (Blueprint Detail Dialog) ────────────────────────────────────── */
