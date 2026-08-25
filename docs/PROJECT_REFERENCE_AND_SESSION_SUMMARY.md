@@ -158,17 +158,3 @@ tests/test_e2e_checkout.py ...                                           [100%]
 * **Coverage**: End-to-end checkout, capability token tampering, out-of-budget attacks, rate limiting, trusted host filters, and webhook HMAC verification.
 
 ---
-
-## 9. Judge / Evaluator Pitch Guide (3-Minute Script)
-
-### Minute 1: The "Why Now" & The Problem (0:00 - 1:00)
-> *"With NPCI's UAP and global agentic protocols, autonomous AI agents are becoming the new digital buyers. But merchants face a massive security barrier: How do you let an AI buy from your store without risking prompt injection attacks, price drift, or runaway credit card debits?"*
-
-### Minute 2: The Core Architecture & Live Simulator (1:00 - 2:00)
-> *"We built the Agentic Commerce Platform on top of Razorpay. We enforce a strict **Zero-Price LLM Invariant**: Gemini only parses buyer intent, while all prices are locked against our cryptographic catalog hash.  
-> Watch our live Architectural Blueprint simulator:  
-> 1. An approved purchase verifies catalog bounds, issues a 5-minute signed Capability Token, and dispatches payment to Razorpay.  
-> 2. A budget-exceeded purchase is instantly gated and logged to our immutable audit trail."*
-
-### Minute 3: Merchant Revenue Growth & Live Telemetry (2:00 - 3:00)
-> *"To grow merchant revenue, our Upsell Agent suggests relevant accessories bounded within the buyer's stated ceiling. In our live Monte Carlo A/B Campaign engine, this demonstrates a **+22% basket lift** and direct revenue expansion—all monitored in real time on our Live Audit Trail."*
