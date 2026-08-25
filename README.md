@@ -13,7 +13,6 @@
 An enterprise-grade, bounded, explainable **Agentic Checkout & Payment Orchestration System**. Built with zero-trust capability tokens, cryptographic catalog snapshotting, atomic budget ledgers, dynamic upsell intelligence, and a real-time **Architectural Blueprint (Cyanotype)** audit dashboard.
 ---
 
-
 ## 📌 Table of Contents
 
 - [About the Project](#-about-the-project)
