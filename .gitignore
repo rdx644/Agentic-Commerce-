@@ -34,5 +34,6 @@ Thumbs.db
 htmlcov/
 .coverage
 
-# Logs
+# Logs & Cache
 *.log
+.vibecheck/
