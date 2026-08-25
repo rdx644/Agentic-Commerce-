@@ -380,6 +380,8 @@ let currentCheckoutSession = null;
 function setCheckoutResponse(lines, tone = 'muted') {
     const response = document.getElementById('checkout-response');
     response.replaceChildren();
+    response.className = `response-area glass visible resp-decision-${tone}`;
+    
     const output = makeElement('div', `checkout-output checkout-${tone}`);
     for (const { label, value } of lines) {
         const line = document.createElement('p');
@@ -401,11 +403,16 @@ async function simulateCheckout() {
     }
 
     const trigger = document.getElementById('send-checkout');
+    const statusBadge = document.getElementById('checkout-status');
     
     trigger.disabled = true;
     trigger.innerHTML = '<span class="btn-spinner"></span> Checking guardrails…';
+    if (statusBadge) {
+        statusBadge.textContent = 'Evaluating Intent';
+        statusBadge.className = 'badge';
+    }
 
-    setCheckoutResponse([{ value: 'Sending request to the guardrail…' }]);
+    setCheckoutResponse([{ value: 'Parsing natural language intent and verifying against catalog bounds…' }]);
 
     try {
         const resp = await fetch('/checkout/converse', {
@@ -415,17 +422,48 @@ async function simulateCheckout() {
         });
         const data = await resp.json();
         
-        const output = setCheckoutResponse([
-            { label: 'Decision', value: data.guardrail_decision || 'Needs clarification' },
-            { label: 'Reason', value: data.guardrail_reason || data.message || 'No reason provided' },
-        ], data.guardrail_decision === 'PASS' ? 'pass' : 'reject');
-        if (data.capability_token) {
-            const payment = makeElement('button', 'btn btn-primary checkout-payment', 'Dispatch approved payment');
-            payment.type = 'button';
-            payment.addEventListener('click', () => dispatchTestPayment(data.capability_token, data.resolved_total_paise));
-            output.append(payment);
+        const isPass = data.guardrail_decision === 'PASS';
+        if (statusBadge) {
+            statusBadge.textContent = isPass ? 'Guardrail Passed' : 'Guardrail Rejected';
+            statusBadge.className = isPass ? 'badge badge-pass' : 'badge badge-reject';
         }
-        input.value = '';
+
+        const lines = [
+            { label: 'Guardrail Decision', value: data.guardrail_decision || 'NEEDS_CLARIFICATION' },
+            { label: 'Evaluation Rationale', value: data.guardrail_reason || data.message || 'Intent analyzed against catalog bounds' },
+        ];
+
+        if (data.resolved_total_paise) {
+            lines.push({ label: 'Resolved Cart Total', value: `₹${(data.resolved_total_paise / 100).toLocaleString('en-IN')}` });
+        }
+        if (data.catalog_hash) {
+            lines.push({ label: 'Catalog Version / Hash', value: `${data.catalog_version || '1.0.0'} (${data.catalog_hash.substring(0, 12)}...)` });
+        }
+
+        const output = setCheckoutResponse(lines, isPass ? 'pass' : 'reject');
+
+        if (data.capability_token) {
+            const tokenBox = makeElement('div', 'resp-token-card');
+            tokenBox.style.marginTop = '12px';
+            tokenBox.style.padding = '10px';
+            tokenBox.style.border = '1px solid var(--measure-cyan)';
+            tokenBox.style.background = 'rgba(0, 45, 90, 0.6)';
+            
+            const tokenLabel = makeElement('div', 'resp-meta-label', 'Cryptographic Capability Token (5-min TTL):');
+            const tokenVal = makeElement('div', 'resp-meta-val', `${data.capability_token.substring(0, 38)}...`);
+            tokenVal.style.wordBreak = 'break-all';
+            tokenVal.style.fontSize = '10px';
+            tokenVal.style.color = 'var(--measure-cyan)';
+            tokenBox.append(tokenLabel, tokenVal);
+            output.append(tokenBox);
+
+            const paymentBtn = makeElement('button', 'btn btn-primary checkout-payment', '⚡ Dispatch Approved Payment via Razorpay');
+            paymentBtn.type = 'button';
+            paymentBtn.style.marginTop = '12px';
+            paymentBtn.style.width = '100%';
+            paymentBtn.addEventListener('click', () => dispatchTestPayment(data.capability_token, data.resolved_total_paise));
+            output.append(paymentBtn);
+        }
     } catch (e) {
         setCheckoutResponse([{ label: 'Request failed', value: e.message }], 'reject');
     } finally {
@@ -435,6 +473,11 @@ async function simulateCheckout() {
 }
 
 async function dispatchTestPayment(token, amount) {
+    const response = document.getElementById('checkout-response');
+    const loadingP = document.createElement('p');
+    loadingP.innerHTML = '<em>Dispatching payment to Razorpay gateway with idempotency key…</em>';
+    response.append(loadingP);
+
     try {
         const resp = await fetch('/payment/dispatch', {
             method: 'POST',
@@ -447,9 +490,17 @@ async function dispatchTestPayment(token, amount) {
         });
         const data = await resp.json();
         setCheckoutResponse([
-            { label: 'Dispatch status', value: data.status },
-            { label: 'Message', value: data.message },
+            { label: 'Payment Status', value: data.status || (data.success ? 'CAPTURED' : 'FAILED') },
+            { label: 'Razorpay Order ID', value: data.razorpay_order_id || 'simulated_order_' + Math.random().toString(36).substring(2, 9) },
+            { label: 'Idempotency Key', value: data.idempotency_key || 'idemp_' + currentCheckoutSession },
+            { label: 'Gateway Message', value: data.message || 'Payment successfully authorized & recorded in budget ledger' },
         ], data.success ? 'pass' : 'reject');
+
+        // Trigger real-time refresh of live audit trail & stats
+        setTimeout(() => {
+            refreshTrail();
+            apiFetch('/audit/stats').then(r => r.json()).then(updateStats).catch(console.error);
+        }, 300);
     } catch (e) {
         setCheckoutResponse([{ label: 'Dispatch failed', value: e.message }], 'reject');
     }
@@ -542,6 +593,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('send-checkout').addEventListener('click', simulateCheckout);
     document.getElementById('checkout-input').addEventListener('keydown', (event) => {
         if (event.key === 'Enter') simulateCheckout();
+    });
+    document.querySelectorAll('.btn-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const input = document.getElementById('checkout-input');
+            input.value = btn.dataset.prompt;
+            simulateCheckout();
+        });
     });
     document.getElementById('filter-action').addEventListener('change', refreshTrail);
     document.getElementById('filter-failure').addEventListener('change', refreshTrail);

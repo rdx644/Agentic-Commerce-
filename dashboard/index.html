@@ -74,10 +74,16 @@
                 <span class="badge" id="checkout-status">Idle</span>
             </div>
             <div class="checkout-body">
-                <p class="subtitle checkout-intro">Test the AI guardrail flow directly with natural language.</p>
+                <p class="subtitle checkout-intro">Test autonomous AI agent guardrails with natural language or 1-click evaluation presets:</p>
                 <div class="input-group">
-                    <input type="text" id="checkout-input" class="text-input" placeholder="e.g., 'I want to buy a Quantum X Pro'" autocomplete="off" />
+                    <input type="text" id="checkout-input" class="text-input" placeholder="e.g., 'I want to buy 1 Quantum X Pro'" autocomplete="off" />
                     <button class="btn btn-primary" id="send-checkout" type="button">Send request</button>
+                </div>
+                <div class="prompt-chips" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;">
+                    <button class="btn btn-chip" type="button" data-prompt="Buy 1 Quantum X Pro with budget 70000 rupees" style="font-size: 10px; padding: 4px 8px; border: 1px dashed var(--measure-cyan); background: rgba(0, 255, 255, 0.05); color: var(--measure-cyan); cursor: pointer;">⚡ Pass: Quantum X Pro (₹59,999)</button>
+                    <button class="btn btn-chip" type="button" data-prompt="Order 2 Ultra Wireless Pods with budget 6000 rupees" style="font-size: 10px; padding: 4px 8px; border: 1px dashed var(--measure-cyan); background: rgba(0, 255, 255, 0.05); color: var(--measure-cyan); cursor: pointer;">⚡ Pass: 2x Pods (₹4,998)</button>
+                    <button class="btn btn-chip" type="button" data-prompt="Buy 1 Quantum X Pro with budget 10000 rupees" style="font-size: 10px; padding: 4px 8px; border: 1px dashed var(--redline-accent); background: rgba(255, 51, 51, 0.05); color: var(--redline-accent); cursor: pointer;">⚡ Reject: Budget Exceeded</button>
+                    <button class="btn btn-chip" type="button" data-prompt="Order 1 Mechanical Keyboard and 1 Pro Gaming Mouse" style="font-size: 10px; padding: 4px 8px; border: 1px dashed rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.05); color: #fff; cursor: pointer;">⚡ Multi-Item: Keyboard + Mouse</button>
                 </div>
                 <div id="checkout-response" class="response-area glass"></div>
             </div>
