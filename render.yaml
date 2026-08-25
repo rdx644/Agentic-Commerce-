@@ -41,5 +41,5 @@ databases:
   - name: agentic-commerce-db
     plan: free
     databaseName: agentic_commerce
-    user: Rdx644
+    user: rdx644
     region: oregon
