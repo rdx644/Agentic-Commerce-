@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
 
     # ── Security ──────────────────────────────────────────────────────────
-    app_env: Literal["development", "test", "testing", "production"] = "development"
+    app_env: str = "development"
     jwt_secret: str = "change-me-in-production"
     capability_token_ttl_seconds: int = 300  # 5 minutes
     operator_username: str = "Razorpay"
@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_production_settings(self) -> "Settings":
         """Fail closed when a deploy uses unsafe development defaults."""
-        if self.app_env != "production":
+        if self.app_env.lower() not in ("production", "prod"):
             return self
 
         if self.jwt_secret == "change-me-in-production" or len(self.jwt_secret) < 32:
