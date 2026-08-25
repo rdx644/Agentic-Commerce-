@@ -53,7 +53,7 @@ An enterprise-grade, bounded, explainable **Agentic Checkout & Payment Orchestra
                                     │ 1. Natural Language Intent
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        FASTAPI INGRESS & MIDDLEWARE                     │
+│                        FASTAPI INGRESS & MIDDLEWARE                    │
 │  - TrustedHostMiddleware  - RateLimiter  - SecurityHeadersMiddleware   │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
@@ -90,7 +90,7 @@ An enterprise-grade, bounded, explainable **Agentic Checkout & Payment Orchestra
 ┌────────────────────────────────────────────────────────────────────────┐
 │                   AUDIT TRAIL & BLUEPRINT TELEMETRY                    │
 │  - Immutable Chronological Event Log in PostgreSQL                     │
-│  - Real-time Server-Sent Events (SSE) Stream -> Architectural Dashboard │
+│  - Real-time Server-Sent Events (SSE) Stream -> Architectural Dashboard│
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
