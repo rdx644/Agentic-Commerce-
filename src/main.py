@@ -16,7 +16,7 @@ from fastapi import Depends, FastAPI
 # pyrefly: ignore [missing-import]
 from fastapi.staticfiles import StaticFiles
 # pyrefly: ignore [missing-import]
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 # pyrefly: ignore [missing-import]
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -221,6 +221,12 @@ if os.path.exists(dashboard_dir):
 
 @app.get("/")
 async def root():
+    """Redirect root directly to the visual Architectural Blueprint dashboard."""
+    return RedirectResponse(url="/dashboard")
+
+
+@app.get("/api")
+async def api_index():
     """API root — navigation."""
     return {
         "service": "Agentic Commerce Platform",
