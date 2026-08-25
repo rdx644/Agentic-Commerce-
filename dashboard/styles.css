@@ -1,0 +1,746 @@
+/* ==========================================================================
+   AGENTIC COMMERCE — ARCHITECTURAL BLUEPRINT (THE "MASTER PLAN" AESTHETIC)
+   Strict Cyanotype Drafting Architecture: 20px Grid, Roboto Mono, Monospaced
+   Wireframes, Sharp 90° Corners, Cyan Dimensions & Redline Accents
+   ========================================================================== */
+
+:root {
+    /* Exact Blueprint Design Tokens */
+    --blueprint-bg: #003366;
+    --drafting-white: rgba(255, 255, 255, 0.8);
+    --measure-cyan: #00FFFF;
+    --redline-accent: #FF3333;
+    --grid-size: 20px;
+
+    /* Typography */
+    --font-mono: 'Roboto Mono', monospace;
+    --font-hand: 'Architects Daughter', cursive;
+
+    /* Wireframe Borders */
+    --drafting-border: 1px solid rgba(255, 255, 255, 0.4);
+    --drafting-border-dim: 1px dashed rgba(255, 255, 255, 0.2);
+    --drafting-border-cyan: 1px solid #00FFFF;
+    --drafting-border-red: 1px solid #FF3333;
+
+    /* Wireframe Backgrounds (Transparent) */
+    --wireframe-bg: rgba(0, 40, 85, 0.35);
+    --wireframe-bg-solid: #003366;
+    --wireframe-input-bg: rgba(0, 25, 55, 0.6);
+
+    /* Animation Transitions */
+    --trans-draft: 0.15s ease-in-out;
+}
+
+/* ── Reset & Foundation ─────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border-radius: 0 !important; /* Force strict 90-degree architectural drafting corners */
+}
+
+html {
+    font-size: 14px;
+    scroll-behavior: smooth;
+    background-color: var(--blueprint-bg);
+}
+
+body {
+    background-color: var(--blueprint-bg);
+    /* 20px Intersecting Drafting Grid with 100px Major Grid lines */
+    background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(to right, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.2) 1px, transparent 1px);
+    background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+    background-position: 0 0;
+    color: var(--drafting-white);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* All Headings in Block Caps */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    color: #ffffff;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+p, span, label, input, select, button, table {
+    font-family: var(--font-mono);
+}
+
+/* ── Technical Header Navigation ────────────────────────────────────────── */
+
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #002b55;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.8);
+    padding: 16px 20px;
+}
+
+.header-content {
+    max-width: 1440px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.logo-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--measure-cyan);
+    background: rgba(0, 255, 255, 0.1);
+    color: var(--measure-cyan);
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.header h1 {
+    font-size: 16px;
+    letter-spacing: 0.12em;
+    color: #ffffff;
+    margin: 0;
+}
+
+.subtitle {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.65);
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.blueprint-meta {
+    font-size: 11px;
+    color: var(--measure-cyan);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    padding: 6px 12px;
+    background: rgba(0, 255, 255, 0.05);
+    letter-spacing: 0.08em;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #ffffff;
+    padding: 6px 12px;
+    border: var(--drafting-border);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+}
+
+.dot-live {
+    background: var(--measure-cyan);
+    box-shadow: 0 0 8px var(--measure-cyan);
+}
+
+.dot-connecting {
+    background: #facc15;
+    box-shadow: 0 0 8px #facc15;
+}
+
+.dot-error {
+    background: var(--redline-accent);
+    box-shadow: 0 0 8px var(--redline-accent);
+}
+
+/* ── Blueprint Technical Stamp Buttons ──────────────────────────────────── */
+
+.btn {
+    padding: 8px 18px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: var(--trans-draft);
+}
+
+.btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #ffffff;
+}
+
+.btn:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Primary Action Button — Cyan Stamp */
+.btn-primary {
+    background: transparent !important;
+    border: 1px solid var(--measure-cyan) !important;
+    color: var(--measure-cyan) !important;
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.2);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: rgba(0, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 16px rgba(0, 255, 255, 0.5);
+}
+
+.btn-spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid transparent;
+    border-top-color: var(--measure-cyan);
+    border-right-color: var(--measure-cyan);
+    border-radius: 50% !important;
+    animation: draftSpin 0.8s linear infinite;
+    display: inline-block;
+}
+
+@keyframes draftSpin {
+    to { transform: rotate(360deg); }
+}
+
+.btn-close {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: var(--drafting-white);
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.btn-close:hover {
+    border-color: var(--redline-accent);
+    color: var(--redline-accent);
+    background: rgba(255, 51, 51, 0.1);
+}
+
+/* ── Stats Grid (Blueprint Wireframe Blocks) ─────────────────────────────── */
+
+.stats-grid {
+    max-width: 1440px;
+    margin: 20px auto;
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 20px;
+}
+
+.stat-card {
+    padding: 20px;
+    background: var(--wireframe-bg);
+    border: var(--drafting-border);
+    text-align: left;
+    position: relative;
+    transition: var(--trans-draft);
+}
+
+.stat-card::before {
+    content: '+';
+    position: absolute;
+    top: -8px;
+    left: -6px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.stat-card::after {
+    content: '+';
+    position: absolute;
+    bottom: -8px;
+    right: -6px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.stat-card:hover {
+    border-color: var(--measure-cyan);
+    background: rgba(0, 255, 255, 0.05);
+}
+
+.stat-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffffff;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Status Colors aligned to Blueprint Specs */
+.stat-pass {
+    color: var(--measure-cyan) !important;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+}
+
+.stat-reject {
+    color: var(--redline-accent) !important;
+    text-shadow: 0 0 10px rgba(255, 51, 51, 0.4);
+}
+
+.stat-money {
+    color: var(--measure-cyan) !important;
+}
+
+.stat-warn {
+    color: var(--redline-accent) !important;
+}
+
+/* ── Main Wireframe Grid ────────────────────────────────────────────────── */
+
+.main-grid {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 20px 40px;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 20px;
+}
+
+#checkout-panel { grid-column: span 12; }
+#campaign-panel { grid-column: span 7; }
+#failure-panel  { grid-column: span 5; }
+#audit-panel    { grid-column: span 12; }
+
+/* ── Wireframe Panels ───────────────────────────────────────────────────── */
+
+.panel {
+    background: var(--wireframe-bg);
+    border: var(--drafting-border);
+    position: relative;
+    transition: var(--trans-draft);
+}
+
+.panel:hover {
+    border-color: rgba(255, 255, 255, 0.8);
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: var(--drafting-border);
+    background: rgba(0, 35, 75, 0.6);
+}
+
+.panel-header h2 {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #ffffff;
+}
+
+.badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: transparent;
+    color: var(--drafting-white);
+}
+
+/* ── Checkout Simulator Drafting Section ────────────────────────────────── */
+
+.checkout-body {
+    padding: 20px;
+}
+
+.checkout-intro {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 14px;
+}
+
+.input-group {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.text-input {
+    flex: 1;
+    background: var(--wireframe-input-bg);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: #ffffff;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 12px 16px;
+    outline: none;
+    transition: all var(--trans-draft);
+}
+
+.text-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+    font-style: italic;
+}
+
+.text-input:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(0, 255, 255, 0.6);
+}
+
+.text-input:focus {
+    border: 1px solid var(--measure-cyan) !important;
+    box-shadow: 0 0 14px rgba(0, 255, 255, 0.45), inset 0 0 8px rgba(0, 255, 255, 0.15);
+    background: rgba(0, 45, 95, 0.95);
+    color: #ffffff;
+}
+
+.response-area {
+    margin-top: 20px;
+    padding: 20px;
+    background: var(--wireframe-input-bg);
+    border: var(--drafting-border-dim);
+    min-height: 60px;
+    font-size: 12px;
+    display: none;
+    line-height: 1.6;
+}
+
+.response-area.visible {
+    display: block;
+}
+
+.resp-decision-pass {
+    border-left: 3px solid var(--measure-cyan);
+    padding-left: 12px;
+}
+
+.resp-decision-reject {
+    border-left: 3px solid var(--redline-accent);
+    padding-left: 12px;
+}
+
+.resp-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: var(--drafting-border-dim);
+}
+
+.resp-meta-item {
+    font-size: 11px;
+}
+
+.resp-meta-label {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+.resp-meta-val {
+    color: #ffffff;
+    font-weight: 700;
+}
+
+/* ── Chart Containers ───────────────────────────────────────────────────── */
+
+.chart-container {
+    position: relative;
+    height: 260px;
+    padding: 20px;
+}
+
+.campaign-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    padding: 14px 20px;
+    border-top: var(--drafting-border);
+    background: rgba(0, 35, 75, 0.5);
+}
+
+.campaign-metrics.is-hidden {
+    display: none;
+}
+
+.metric {
+    border: var(--drafting-border-dim);
+    padding: 8px 12px;
+    background: transparent;
+}
+
+.metric-label {
+    display: block;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.65);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.metric-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--measure-cyan);
+}
+
+/* ── Live Audit Trail Table Calibration ─────────────────────────────────── */
+
+.filters {
+    display: flex;
+    gap: 10px;
+}
+
+.filters select {
+    background: var(--wireframe-input-bg);
+    border: var(--drafting-border);
+    color: #ffffff;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    outline: none;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.filters select:focus {
+    border-color: var(--measure-cyan);
+}
+
+.audit-table-wrapper {
+    overflow-x: auto;
+    max-height: 480px;
+    background: var(--wireframe-bg);
+}
+
+.audit-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    text-align: left;
+}
+
+/* Table Headers: Solid 1px White Bottom Border + Blueprint Solid BG */
+.audit-table thead {
+    position: sticky;
+    top: 0;
+    background: #002b55;
+    z-index: 2;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+.audit-table th {
+    padding: 14px 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #ffffff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Standard Rows: 1px Dashed Bottom Border, Exactly 48px Height */
+.audit-table tbody tr {
+    height: 48px;
+    min-height: 48px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.2);
+    transition: var(--trans-draft);
+}
+
+.audit-table tbody tr:hover {
+    background: rgba(0, 255, 255, 0.08);
+}
+
+.audit-table td {
+    padding: 14px 18px;
+    color: var(--drafting-white);
+    white-space: nowrap;
+}
+
+.audit-table td.time-cell {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 11px;
+}
+
+.audit-table td.reason-cell {
+    max-width: 380px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: help;
+}
+
+/* Decision Badges: Blueprint Precision */
+.badge-pass {
+    border: 1px solid var(--measure-cyan) !important;
+    color: var(--measure-cyan) !important;
+    background: rgba(0, 255, 255, 0.1) !important;
+    padding: 2px 6px;
+    font-weight: 700;
+    display: inline-block;
+}
+
+.badge-reject {
+    border: 1px solid var(--redline-accent) !important;
+    color: var(--redline-accent) !important;
+    background: rgba(255, 51, 51, 0.1) !important;
+    padding: 2px 6px;
+    font-weight: 700;
+    display: inline-block;
+}
+
+.action-pill {
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 2px 6px;
+    font-size: 10px;
+    color: #ffffff;
+    display: inline-block;
+}
+
+/* ── Modal (Blueprint Detail Dialog) ────────────────────────────────────── */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 20, 45, 0.85);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--trans-draft);
+}
+
+.modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal {
+    background: #002b55;
+    border: 2px solid var(--measure-cyan);
+    width: 100%;
+    max-width: 600px;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    background: #002244;
+}
+
+.modal-body {
+    padding: 20px;
+    font-size: 12px;
+}
+
+/* ── Toast Notifications ────────────────────────────────────────────────── */
+
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    padding: 10px 16px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    border: 1px solid var(--measure-cyan);
+    background: #002b55;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    animation: draftToast 0.2s ease-out;
+}
+
+@keyframes draftToast {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive Layout Rules ────────────────────────────────────────────── */
+
+@media (max-width: 1200px) {
+    .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    #campaign-panel, #failure-panel {
+        grid-column: span 12;
+    }
+}
+
+@media (max-width: 600px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

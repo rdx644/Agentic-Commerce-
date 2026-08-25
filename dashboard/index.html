@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic Commerce — Audit Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="/dashboard/static/favicon.svg">
+    <meta name="theme-color" content="#101014">
+    <meta name="description" content="Real-time audit dashboard for agentic commerce guardrails">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="/dashboard/static/styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">⌖</div>
+                <div>
+                    <h1>AGENTIC COMMERCE</h1>
+                    <p class="subtitle">[DWG-01 // AUDIT BLUEPRINT] — GATED SPEND MATRIX</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="blueprint-meta" id="cursor-coords">COORD: X[000] Y[000] | 1:1</div>
+                <div class="status-indicator" id="sse-status">
+                    <span class="dot dot-connecting"></span>
+                    <span>LINKING...</span>
+                </div>
+                <button class="btn btn-primary" id="run-campaign" type="button">RUN CAMPAIGN</button>
+            </div>
+        </div>
+    </header>
+
+
+
+    <!-- Stats Grid -->
+    <section class="stats-grid" id="stats-grid">
+        <div class="stat-card glass">
+            <div class="stat-label">Total Events</div>
+            <div class="stat-value" id="stat-total">0</div>
+        </div>
+        <div class="stat-card glass">
+            <div class="stat-label">Guardrail Passes</div>
+            <div class="stat-value stat-pass" id="stat-passes">0</div>
+        </div>
+        <div class="stat-card glass">
+            <div class="stat-label">Guardrail Rejects</div>
+            <div class="stat-value stat-reject" id="stat-rejects">0</div>
+        </div>
+        <div class="stat-card glass">
+            <div class="stat-label">Active Sessions</div>
+            <div class="stat-value" id="stat-sessions">0</div>
+        </div>
+        <div class="stat-card glass">
+            <div class="stat-label">Total Spent</div>
+            <div class="stat-value stat-money" id="stat-spent">₹0</div>
+        </div>
+        <div class="stat-card glass">
+            <div class="stat-label">Dead Letters</div>
+            <div class="stat-value stat-warn" id="stat-deadletters">0</div>
+        </div>
+    </section>
+
+    <!-- Main Content Grid -->
+    <main class="main-grid">
+        <!-- Checkout Test Panel -->
+        <section class="panel glass" id="checkout-panel">
+            <div class="panel-header">
+                <h2>🛒 Checkout Simulator</h2>
+                <span class="badge" id="checkout-status">Idle</span>
+            </div>
+            <div class="checkout-body">
+                <p class="subtitle checkout-intro">Test the AI guardrail flow directly with natural language.</p>
+                <div class="input-group">
+                    <input type="text" id="checkout-input" class="text-input" placeholder="e.g., 'I want to buy a Quantum X Pro'" autocomplete="off" />
+                    <button class="btn btn-primary" id="send-checkout" type="button">Send request</button>
+                </div>
+                <div id="checkout-response" class="response-area glass"></div>
+            </div>
+        </section>
+
+        <!-- Campaign Chart -->
+        <section class="panel glass" id="campaign-panel">
+            <div class="panel-header">
+                <h2>📊 Campaign Results</h2>
+                <span class="badge" id="campaign-badge">No data yet</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="campaign-chart"></canvas>
+            </div>
+            <div class="campaign-metrics is-hidden" id="campaign-metrics">
+                <div class="metric">
+                    <span class="metric-label">Conversion Lift</span>
+                    <span class="metric-value" id="metric-conv-lift">—</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Basket Lift</span>
+                    <span class="metric-value" id="metric-basket-lift">—</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Revenue Delta</span>
+                    <span class="metric-value" id="metric-revenue-delta">—</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Upsell Rate</span>
+                    <span class="metric-value" id="metric-upsell-rate">—</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Failure Inspector -->
+        <section class="panel glass" id="failure-panel">
+            <div class="panel-header">
+                <h2>🔴 Failure Inspector</h2>
+                <span class="badge" id="failure-badge">Live Monitor</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="failure-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- Audit Trail (Live) -->
+        <section class="panel glass" id="audit-panel">
+            <div class="panel-header">
+                <h2>📋 Live Audit Trail</h2>
+                <div class="filters">
+                    <select id="filter-action" aria-label="Filter audit trail by action">
+                        <option value="">All Actions</option>
+                        <option value="GUARDRAIL_CHECK">Guardrail</option>
+                        <option value="PAYMENT_DISPATCH">Payment</option>
+                        <option value="WEBHOOK_RECEIVED">Webhook</option>
+                        <option value="RECONCILIATION">Reconciliation</option>
+                        <option value="UPSELL_OFFER">Upsell</option>
+                        <option value="DEAD_LETTER">Dead Letter</option>
+                    </select>
+                    <select id="filter-failure" aria-label="Filter audit trail by result">
+                        <option value="">All Results</option>
+                        <option value="guardrail-reject">Guardrail Reject</option>
+                        <option value="price-drift">Price Drift</option>
+                        <option value="budget-exceeded">Budget Exceeded</option>
+                        <option value="session-frozen">Session Frozen</option>
+                        <option value="network-fail">Network Fail</option>
+                        <option value="webhook-mismatch">Webhook Mismatch</option>
+                    </select>
+                </div>
+            </div>
+            <div class="audit-table-wrapper">
+                <table class="audit-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Session</th>
+                            <th>Action</th>
+                            <th>Decision</th>
+                            <th>Amount</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-tbody"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Session Detail Modal -->
+    <div class="modal-overlay" id="modal-overlay" role="presentation">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <div class="modal-header">
+                <h2 id="modal-title">Session Deep Dive</h2>
+                <button class="btn-close" id="close-modal" type="button" aria-label="Close session detail">Close</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <p>Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="login-modal" role="presentation">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="login-title">
+            <div class="modal-header">
+                <h2 id="login-title">Operator Login</h2>
+            </div>
+            <div class="modal-body">
+                <form id="login-form">
+                    <div class="input-group" style="margin-bottom: 1rem;">
+                        <input type="text" id="login-username" class="text-input" placeholder="Username" required autocomplete="username" />
+                    </div>
+                    <div class="input-group" style="margin-bottom: 1rem;">
+                        <input type="password" id="login-password" class="text-input" placeholder="Password" required autocomplete="current-password" />
+                    </div>
+                    <button class="btn btn-primary" type="submit" style="width: 100%;">Login</button>
+                    <p id="login-error" style="color: #f87171; margin-top: 1rem; display: none;">Invalid credentials</p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+    <script src="/dashboard/static/app.js"></script>
+</body>
+</html>

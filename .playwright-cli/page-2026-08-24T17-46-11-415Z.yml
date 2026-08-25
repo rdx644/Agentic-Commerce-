@@ -1,0 +1,116 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: ⚡
+        - generic [ref=e6]:
+          - heading "Agentic Commerce" [level=1] [ref=e7]
+          - paragraph [ref=e8]: Audit Dashboard — Every money action explainable, bounded & gated
+      - generic [ref=e9]:
+        - generic [ref=e10]: Live
+        - button "Run campaign" [ref=e13] [cursor=pointer]
+  - generic [ref=e14]:
+    - generic [ref=e15]:
+      - generic [ref=e16]: Total Events
+      - generic [ref=e17]: "0"
+    - generic [ref=e18]:
+      - generic [ref=e19]: Guardrail Passes
+      - generic [ref=e20]: "0"
+    - generic [ref=e21]:
+      - generic [ref=e22]: Guardrail Rejects
+      - generic [ref=e23]: "0"
+    - generic [ref=e24]:
+      - generic [ref=e25]: Active Sessions
+      - generic [ref=e26]: "0"
+    - generic [ref=e27]:
+      - generic [ref=e28]: Total Spent
+      - generic [ref=e29]: ₹0
+    - generic [ref=e30]:
+      - generic [ref=e31]: Dead Letters
+      - generic [ref=e32]: "0"
+  - main [ref=e33]:
+    - generic [ref=e34]:
+      - generic [ref=e35]:
+        - heading "🛒 Checkout Simulator" [level=2] [ref=e36]
+        - generic [ref=e37]: Idle
+      - generic [ref=e38]:
+        - paragraph [ref=e39]: Test the AI guardrail flow directly with natural language.
+        - generic [ref=e40]:
+          - textbox "e.g., 'I want to buy a Quantum X Pro'" [ref=e41]
+          - button "Send request" [ref=e42] [cursor=pointer]
+    - generic [ref=e44]:
+      - generic [ref=e45]:
+        - heading "📋 Live Audit Trail" [level=2] [ref=e46]
+        - generic [ref=e47]:
+          - combobox "Filter audit trail by action" [ref=e48] [cursor=pointer]:
+            - option "All Actions" [selected]
+            - option "Guardrail"
+            - option "Payment"
+            - option "Webhook"
+            - option "Reconciliation"
+            - option "Upsell"
+            - option "Dead Letter"
+          - combobox "Filter audit trail by result" [ref=e49] [cursor=pointer]:
+            - option "All Results" [selected]
+            - option "Guardrail Reject"
+            - option "Price Drift"
+            - option "Budget Exceeded"
+            - option "Session Frozen"
+            - option "Network Fail"
+            - option "Webhook Mismatch"
+      - table [ref=e51]:
+        - rowgroup [ref=e52]:
+          - row [ref=e53] [cursor=pointer]:
+            - columnheader "Time" [ref=e54]
+            - columnheader "Session" [ref=e55]
+            - columnheader "Action" [ref=e56]
+            - columnheader "Decision" [ref=e57]
+            - columnheader "Amount" [ref=e58]
+            - columnheader "Reason" [ref=e59]
+        - rowgroup [ref=e60]:
+          - row [ref=e61] [cursor=pointer]:
+            - cell "5:45:45 PM" [ref=e62]
+            - cell "camp_def43760419…" [ref=e63]
+            - cell "GUARDRAIL_CHECK" [ref=e64]
+            - cell "REJECT" [ref=e66]
+            - cell "₹59,999" [ref=e67]
+            - cell "Cart total (₹59999.00) exceeds stated ceiling (₹6924.04)" [ref=e68]
+          - row [ref=e69] [cursor=pointer]:
+            - cell "5:45:45 PM" [ref=e70]
+            - cell "camp_def43760419…" [ref=e71]
+            - cell "GUARDRAIL_CHECK" [ref=e72]
+            - cell "REJECT" [ref=e74]
+            - cell "₹10,498" [ref=e75]
+            - cell "Cart total (₹10498.00) exceeds stated ceiling (₹6642.29)" [ref=e76]
+          - row [ref=e77] [cursor=pointer]:
+            - cell "5:45:45 PM" [ref=e78]
+            - cell "camp_def43760419…" [ref=e79]
+            - cell "GUARDRAIL_CHECK" [ref=e80]
+            - cell "PASS" [ref=e82]
+            - cell "₹7,497" [ref=e83]
+            - 'cell "All checks passed. Total: ₹7497.00. Capability token issued." [ref=e84]'
+          - row [ref=e85] [cursor=pointer]:
+            - cell "5:45:45 PM" [ref=e86]
+            - cell "camp_def43760419…" [ref=e87]
+            - cell "UPSELL_OFFER" [ref=e88]
+            - cell "PASS" [ref=e90]
+            - cell "₹999" [ref=e91]
+            - 'cell "Offered: ArmorShield Phone Case at ₹999.00" [ref=e92]'
+          - row [ref=e93] [cursor=pointer]:
+            - cell "5:45:45 PM" [ref=e94]
+            - cell "camp_def43760419…" [ref=e95]
+            - cell "GUARDRAIL_CHECK" [ref=e96]
+            - cell "PASS" [ref=e98]
+            - cell "₹999" [ref=e99]
+            - 'cell "All checks passed. Total: ₹999.00. Capability token issued." [ref=e100]'
+          - row [ref=e101] [cursor=pointer]:
+            - cell "5:45:45 PM" [ref=e102]
+            - cell "camp_def43760419…" [ref=e103]
+            - cell "GUARDRAIL_CHECK" [ref=e104]
+            - cell "REJECT" [ref=e106]
+            - cell "₹79,998" [ref=e107]
+            - cell "Cart total (₹79998.00) exceeds stated ceiling (₹17107.92)" [ref=e108]
+    - generic [ref=e110]:
+      - heading "📊 Campaign Results" [level=2] [ref=e111]
+      - generic [ref=e112]: No data yet
+    - heading "🔴 Failure Inspector" [level=2] [ref=e117]

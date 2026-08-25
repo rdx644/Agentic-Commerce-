@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+__pycache__
+.pytest_cache
+.playwright-cli
+*.db
+*.db-*
+tests
+scripts
+architecture_graph.*

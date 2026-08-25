@@ -1,0 +1,10 @@
+[project]
+name = "agentic-commerce"
+version = "0.1.0"
+description = "AI Growth & Agentic Commerce — Razorpay Buildathon Track 01"
+requires-python = ">=3.11"
+readme = "README.md"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
