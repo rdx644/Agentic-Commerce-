@@ -303,8 +303,8 @@ For evaluators, judges, and reviewers accessing the live deployed dashboard:
 
 | Field | Demo Value |
 | :--- | :--- |
-| **Username** | `operator` |
-| **Password** | `SuperSecureOperatorAdmin2026!` |
+| **Username** | `Razorpay` |
+| **Password** | `RazorPay@123456#` |
 
 > [!NOTE]
 > In custom self-hosted deployments, operator credentials can be modified via the `OPERATOR_USERNAME` and `OPERATOR_PASSWORD` environment variables.
