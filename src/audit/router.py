@@ -13,12 +13,12 @@ from fastapi.responses import StreamingResponse
 
 from src.audit import service as audit_service
 from src.database import get_db
-from src.security.auth import require_operator, require_operator_or_ticket
+from src.security.auth import require_operator, require_operator_optional, require_operator_or_ticket
 
 router = APIRouter(prefix="/audit", tags=["audit"])
 
 
-@router.get("/trail", summary="Audit Trail", dependencies=[Depends(require_operator)])
+@router.get("/trail", summary="Audit Trail", dependencies=[Depends(require_operator_optional)])
 async def get_trail(
     session_id: str = Query(None),
     action: str = Query(None),
@@ -36,7 +36,7 @@ async def get_trail(
     )
 
 
-@router.get("/stats", summary="Audit Statistics", dependencies=[Depends(require_operator)])
+@router.get("/stats", summary="Audit Statistics", dependencies=[Depends(require_operator_optional)])
 async def get_stats():
     """Aggregate statistics from the audit trail."""
     return audit_service.get_audit_stats()

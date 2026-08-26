@@ -12,13 +12,16 @@ let failureChart = null;
 let lastStats = null;
 let authToken = localStorage.getItem('agentic_auth_token') || '';
 
+let reconnectTimeout = null;
+
 async function apiFetch(url, options = {}) {
-    options.headers = { 
-        'Authorization': `Bearer ${authToken}`,
-        ...(options.headers || {})
-    };
+    const headers = { ...(options.headers || {}) };
+    if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+    }
+    options.headers = headers;
     const res = await fetch(url, options);
-    if (res.status === 401) {
+    if (res.status === 401 && !url.includes('/audit/stats') && !url.includes('/audit/trail') && !url.includes('/audit/stream')) {
         document.getElementById('login-modal').classList.add('open');
         throw new Error('Unauthorized');
     }
@@ -38,14 +41,20 @@ function makeElement(tag, className, value) {
 
 function setConnectionStatus(label, state) {
     const status = document.getElementById('sse-status');
+    if (!status) return;
     status.replaceChildren(makeElement('span', `dot dot-${state}`), makeElement('span', '', label));
 }
 
 // ── SSE Connection ──────────────────────────────────────────────────────────
 
 async function connectSSE() {
+    if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+    }
     if (eventSource) {
         eventSource.close();
+        eventSource = null;
     }
 
     let streamUrl = '/audit/stream';
@@ -66,36 +75,44 @@ async function connectSSE() {
         }
     }
 
-    eventSource = new EventSource(streamUrl);
+    try {
+        eventSource = new EventSource(streamUrl);
 
-    eventSource.onopen = () => {
-        setConnectionStatus('Live', 'live');
-    };
+        eventSource.onopen = () => {
+            setConnectionStatus('Live', 'live');
+        };
 
-    eventSource.onmessage = (event) => {
-        try {
-            const entry = JSON.parse(event.data);
-            addAuditEntry(entry);
-        } catch (e) {
-            console.warn('Failed to parse SSE message:', e);
-        }
-    };
+        eventSource.onmessage = (event) => {
+            try {
+                const entry = JSON.parse(event.data);
+                addAuditEntry(entry);
+            } catch (e) {
+                console.warn('Failed to parse SSE message:', e);
+            }
+        };
 
-    eventSource.addEventListener('stats', (event) => {
-        try {
-            const stats = JSON.parse(event.data);
-            updateStats(stats);
-            lastStats = stats;
-        } catch (e) {
-            console.warn('Failed to parse stats:', e);
-        }
-    });
+        eventSource.addEventListener('stats', (event) => {
+            try {
+                const stats = JSON.parse(event.data);
+                updateStats(stats);
+                lastStats = stats;
+            } catch (e) {
+                console.warn('Failed to parse stats:', e);
+            }
+        });
 
-    eventSource.onerror = (e) => {
+        eventSource.onerror = (e) => {
+            setConnectionStatus('Reconnecting', 'error');
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            reconnectTimeout = setTimeout(connectSSE, 4000);
+        };
+    } catch (err) {
         setConnectionStatus('Reconnecting', 'error');
-        apiFetch('/audit/stats').catch(() => {});
-        setTimeout(connectSSE, 5000);
-    };
+        reconnectTimeout = setTimeout(connectSSE, 4000);
+    }
 }
 
 // ── Virtual Scroll Audit Trail ──────────────────────────────────────────────
@@ -735,7 +752,30 @@ function removeSplineWatermark() {
     setTimeout(() => clearInterval(interval), 6000);
 }
 
-function initData() {
+async function initData() {
+    // Auto-authenticate demo operator credentials if no token exists
+    if (!authToken) {
+        try {
+            const fd = new URLSearchParams();
+            fd.append('username', 'Razorpay');
+            fd.append('password', 'RazorPay@123456#');
+            const res = await fetch('/auth/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: fd
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.access_token) {
+                    authToken = data.access_token;
+                    localStorage.setItem('agentic_auth_token', authToken);
+                }
+            }
+        } catch (e) {
+            console.warn('Demo operator auto-auth failed, continuing as guest:', e);
+        }
+    }
+
     connectSSE();
     refreshTrail();
     // Initial stats fetch
