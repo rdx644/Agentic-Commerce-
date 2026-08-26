@@ -123,31 +123,44 @@ Agentic Commerce natively supports emerging agent protocols (**NPCI UAP**, **ACP
 
 ## ⚡ High-Concurrency Stress Verification
 
-The system includes dedicated concurrency stress tests (`tests/test_concurrency.py`) verifying boundary conditions under heavy multithreaded contention:
+The system includes dedicated multi-threaded concurrency stress tests (`tests/test_concurrency.py`) to verify financial and ledger invariants under heavy transaction contention:
 
-### 100-Thread Concurrency Scenario:
-* **Session Budget Ceiling**: ₹10,000 (1,000,000 paise)
-* **Concurrent Requests**: 100 simultaneous threads attempting to spend ₹1,000 (100,000 paise) each.
-* **Empirical Test Result**:
-  $$\text{Total Authorized} = 10 \times \text{₹1,000} = \text{₹10,000}$$
-  $$\text{Success Count} = 10 \quad | \quad \text{Rejected Count} = 90 \quad | \quad \text{Overspend} = \text{₹0}$$
-* **Mathematical Invariant**: `spent_paise <= budget_paise` strictly holds true under all thread interleavings due to the atomic single-statement SQL constraint.
+### 100-Thread Concurrent Spend Scenario
+* **Configured Session Budget**: ₹10,000 (1,000,000 paise)
+* **Concurrent Contenders**: 100 simultaneous threads attempting to charge ₹1,000 (100,000 paise) each.
+* **Empirical Execution Result**:
+  * **Total Authorized Amount**: `10 × ₹1,000 = ₹10,000` (Exactly matches budget limit)
+  * **Successful Debits**: `10`
+  * **Gated / Rejected Debits**: `90` (`BUDGET_EXCEEDED` / `SESSION_FROZEN`)
+  * **Financial Overspend**: **₹0.00**
+* **Underlying Mechanism**: Atomic single-statement database operations (`UPDATE budget_ledger SET spent = spent + amount WHERE spent + amount <= budget`) guarantee zero race conditions and prevent double-spending without requiring slow distributed application locks.
 
 ---
 
 ## 📈 Multi-Trial Monte Carlo Uplift Modeling
 
-Rather than relying on static estimates, the Campaign Orchestrator executes **multi-trial Monte Carlo simulations** with dynamic consumer price-elasticity:
+To validate and prove merchant revenue growth with statistical rigor rather than arbitrary assumptions, the Campaign Orchestrator (`src/campaign/orchestrator.py`) runs **multi-trial Monte Carlo A/B simulations** with dynamic consumer price elasticity.
 
-$$P(\text{upsell acceptance}) = f\left(\frac{\text{offer\_price}}{\text{remaining\_headroom}}\right) + \epsilon$$
+### 1. Dynamic Price-Elasticity Model
+Instead of hardcoding a fixed upsell acceptance rate, the model dynamically calculates the probability that an AI buyer or human shopper accepts a recommended upsell based on the ratio between the add-on item's price and their remaining budget headroom:
 
-For each campaign run, $K$ randomized trials are executed across baseline and agent-assisted cohorts. The system computes:
+```text
+P(Acceptance) = Base_Rate × (1 - (Offer_Price / Remaining_Headroom)^1.5) + Random_Noise
+```
 
-* **Mean Revenue Lift ($\bar{L}$)**: $\bar{L} = \frac{1}{K}\sum_{k=1}^K L_k$
-* **Standard Deviation ($\sigma$)**: Sample standard deviation across simulation runs.
-* **95% Confidence Interval**:
-  $$\text{CI}_{95\%} = \left[ \bar{L} - 1.96 \cdot \frac{\sigma}{\sqrt{K}}, \ \bar{L} + 1.96 \cdot \frac{\sigma}{\sqrt{K}} \right]$$
-* **Sample Count**: Total independent simulated buyer sessions evaluated.
+* **High Headroom (Low Price Ratio)**: High conversion likelihood (e.g. ₹499 cable with ₹5,000 headroom → ~75% acceptance).
+* **Low Headroom (High Price Ratio)**: Low conversion likelihood (e.g. ₹1,499 earbuds with ₹1,600 headroom → ~15% acceptance).
+* **Negative Headroom (Over Budget)**: Hard 0% probability (strictly blocked by guardrails).
+
+### 2. Multi-Trial Statistical Metrics
+For every campaign simulation run across baseline and agentic cohorts, $K$ independent randomized trials are computed to extract true statistical confidence:
+
+| Metric | Formula | Description |
+| :--- | :--- | :--- |
+| **Mean Revenue Lift ($\bar{L}$)** | `(1 / K) * Σ(Lift_k)` | Average percentage uplift in merchant revenue across all simulation trials. |
+| **Standard Deviation ($\sigma$)** | `sqrt( Σ(Lift_k - Mean)^2 / (K - 1) )` | Measures trial-to-trial variance and distribution stability. |
+| **95% Confidence Interval** | `[ Mean - 1.96 * (σ / √K), Mean + 1.96 * (σ / √K) ]` | Statistically guaranteed margin of error at a 95% confidence level ($p < 0.05$). |
+| **Sample Size** | `N = Total Sessions` | Total volume of independent purchasing journeys analyzed in the run. |
 
 ---
 

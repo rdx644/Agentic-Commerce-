@@ -565,23 +565,25 @@ p, span, label, input, select, button, table {
     background: var(--wireframe-bg);
     position: relative;
     contain: layout paint;
+    width: 100%;
 }
 
 .audit-table {
     width: 100%;
+    min-width: 100%;
     table-layout: fixed;
     border-collapse: collapse;
     font-size: 11px;
     text-align: left;
 }
 
-/* Table Column Width Calibration */
-.col-time     { width: 110px; }
-.col-session  { width: 150px; }
-.col-action   { width: 160px; }
-.col-decision { width: 95px; }
-.col-amount   { width: 110px; }
-.col-reason   { width: auto; min-width: 0; }
+/* Table Column Width Calibration — Edge to Edge */
+.col-time     { width: 110px; min-width: 110px; max-width: 110px; }
+.col-session  { width: 155px; min-width: 155px; max-width: 155px; }
+.col-action   { width: 160px; min-width: 160px; max-width: 160px; }
+.col-decision { width: 95px;  min-width: 95px;  max-width: 95px; }
+.col-amount   { width: 105px; min-width: 105px; max-width: 105px; }
+.col-reason   { width: 100%;  min-width: 250px; }
 
 /* Table Headers: Solid 1px White Bottom Border + Blueprint Solid BG */
 .audit-table thead {
