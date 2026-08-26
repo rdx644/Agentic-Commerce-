@@ -120,7 +120,7 @@
 agentic-commerce/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml               # Automated CI pipeline (Pytest + Docker build)
+│       └── ci.yml               # Automated CI pipeline (Ruff + Pytest + dashboard syntax + Docker build)
 ├── dashboard/                   # Architectural Blueprint Audit Dashboard (SPA)
 │   ├── index.html               # Semantic drafting layout with coordinate tracking
 │   ├── styles.css               # Cyanotype color tokens (--blueprint-bg, 20px grid)
