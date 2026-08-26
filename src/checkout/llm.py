@@ -125,11 +125,12 @@ def _heuristic_parse(message: str, catalog_items: list[dict]) -> ParsedIntent:
     scored_items.sort(key=lambda x: x[0], reverse=True)
 
     if not scored_items:
+        available_names = ", ".join(it["name"] for it in catalog_items[:4]) if catalog_items else "Quantum X Pro Smartphone, NeoLite 5G Phone, SoundPods Pro ANC"
         return ParsedIntent(
             items=[],
             ceiling_paise=budget_paise or 10000000,
             confidence=0.0,
-            clarification_needed="I could not identify any products from our catalog in your message. Available items include Quantum X Pro, Ultra Wireless Pods, Pro Gaming Mouse, and Mechanical Keyboard.",
+            clarification_needed=f"I could not identify any products from our catalog in your message. Available items include: {available_names}.",
         )
 
     # Pick the best matched item(s) (highest scoring items)

@@ -504,7 +504,7 @@ p, span, label, input, select, button, table {
 
 .campaign-metrics {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 12px;
     padding: 14px 20px;
     border-top: var(--drafting-border);

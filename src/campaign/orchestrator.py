@@ -1,13 +1,14 @@
 """
 Campaign orchestrator — batch the flow across simulated sessions.
 
-Purpose: "grows the merchant's revenue" becomes a measured number
-(baseline conversion/basket size vs. with-agent), not an anecdote.
+Purpose: "grows the merchant's revenue" becomes a measured number with
+statistical confidence (mean uplift, 95% CI, standard deviation, sample count),
+not an ungrounded anecdote.
 
 Design:
 - Split sessions 50/50: baseline (no agent) vs with-agent (full flow)
-- Each session: random customer, random cart, random budget
-- Measure: conversion rate, basket size, upsell acceptance, revenue delta
+- Dynamic price-elasticity upsell acceptance modeling (not hardcoded 60%)
+- Multi-trial Monte Carlo simulation to compute empirical confidence intervals
 - All sessions go through the real guardrail — no mock paths
 """
 
@@ -15,7 +16,9 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import random
+import statistics
 import time
 import uuid
 from typing import Optional
@@ -32,9 +35,29 @@ from src.database import get_db_transaction, get_db
 logger = logging.getLogger(__name__)
 
 
+def _simulate_upsell_acceptance(offer_price_paise: int, remaining_budget_paise: int) -> bool:
+    """
+    Dynamic price-elasticity acceptance model.
+    Customers have higher willingness-to-pay when the add-on is a smaller fraction
+    of their remaining headroom.
+    """
+    if remaining_budget_paise <= 0:
+        return False
+    
+    # Headroom ratio: higher headroom = higher acceptance
+    headroom_ratio = min(1.0, max(0.05, remaining_budget_paise / (offer_price_paise + remaining_budget_paise)))
+    # Base probability modeled with natural consumer elasticity (30% - 75%)
+    base_prob = 0.25 + (0.50 * headroom_ratio)
+    # Add random demographic variance
+    noise = random.uniform(-0.08, 0.08)
+    acceptance_prob = max(0.10, min(0.90, base_prob + noise))
+    return random.random() < acceptance_prob
+
+
 def run_campaign(config: CampaignConfig) -> CampaignReport:
     """
-    Run a full campaign: baseline vs with-agent across simulated sessions.
+    Run a full campaign: baseline vs with-agent across simulated sessions with
+    multi-trial Monte Carlo statistical analysis.
     """
     campaign_id = config.campaign_id or f"camp_{uuid.uuid4().hex[:12]}"
     manifest = catalog_service.get_manifest()
@@ -47,22 +70,60 @@ def run_campaign(config: CampaignConfig) -> CampaignReport:
     baseline_results: list[SessionResult] = []
     agent_results: list[SessionResult] = []
 
-    # ── Run baseline sessions ─────────────────────────────────────────────
+    # ── Primary Run: Persisted to Database ────────────────────────────────
     for i in range(half):
         session_id = f"{campaign_id}_baseline_{i}"
         result = _run_baseline_session(session_id, available_items, config, manifest.hash)
         baseline_results.append(result)
         _save_session_result(campaign_id, result)
 
-    # ── Run agent sessions ────────────────────────────────────────────────
     for i in range(config.total_sessions - half):
         session_id = f"{campaign_id}_agent_{i}"
         result = _run_agent_session(session_id, available_items, config, manifest.hash)
         agent_results.append(result)
         _save_session_result(campaign_id, result)
 
+    # ── Multi-Trial Monte Carlo Analysis ──────────────────────────────────
+    trial_lifts: list[float] = []
+    num_trials = max(1, config.num_trials)
+
+    for trial_idx in range(num_trials):
+        t_base_rev = 0
+        t_base_conv = 0
+        for _ in range(half):
+            res = _run_baseline_session(f"mc_base_{trial_idx}_{uuid.uuid4().hex[:6]}", available_items, config, manifest.hash)
+            if res.converted:
+                t_base_rev += res.basket_size_paise
+                t_base_conv += 1
+
+        t_agent_rev = 0
+        t_agent_conv = 0
+        for _ in range(config.total_sessions - half):
+            res = _run_agent_session(f"mc_agent_{trial_idx}_{uuid.uuid4().hex[:6]}", available_items, config, manifest.hash)
+            if res.converted:
+                t_agent_rev += res.basket_size_paise
+                t_agent_conv += 1
+
+        lift = ((t_agent_rev - t_base_rev) / t_base_rev * 100) if t_base_rev > 0 else 0.0
+        trial_lifts.append(lift)
+
+    # Compute statistics across Monte Carlo trials
+    mean_lift = float(statistics.mean(trial_lifts))
+    std_dev = float(statistics.stdev(trial_lifts)) if len(trial_lifts) > 1 else 0.0
+    se = std_dev / math.sqrt(len(trial_lifts)) if len(trial_lifts) > 0 else 0.0
+    ci_lower = mean_lift - (1.96 * se)
+    ci_upper = mean_lift + (1.96 * se)
+
     # ── Compute aggregate report ──────────────────────────────────────────
-    return _compute_report(campaign_id, baseline_results, agent_results)
+    report = _compute_report(campaign_id, baseline_results, agent_results)
+    report.mean_revenue_lift_pct = round(mean_lift, 2)
+    report.std_deviation_pct = round(std_dev, 2)
+    report.ci_95_lower = round(ci_lower, 2)
+    report.ci_95_upper = round(ci_upper, 2)
+    report.sample_count = config.total_sessions * num_trials
+    report.num_trials = num_trials
+
+    return report
 
 
 def _run_baseline_session(
@@ -74,15 +135,12 @@ def _run_baseline_session(
     """Simulate a baseline session (no upsell agent)."""
     start = time.time()
 
-    # Random budget and cart
     budget = random.randint(config.min_budget_paise, config.max_budget_paise)
     cart_size = random.randint(1, min(3, len(items)))
     cart_items_raw = random.sample(items, cart_size)
 
-    # Initialize budget
     budget_ledger.init_session_budget(session_id, budget)
 
-    # Build intent
     cart_items = [CartItem(item_id=item.item_id, quantity=1) for item in cart_items_raw]
     total = sum(item.price_paise for item in cart_items_raw)
 
@@ -95,7 +153,6 @@ def _run_baseline_session(
         intent_type="checkout",
     )
 
-    # Run through guardrail
     decision = guardrail_service.check_spend(intent)
     duration = int((time.time() - start) * 1000)
 
@@ -116,18 +173,15 @@ def _run_agent_session(
     config: CampaignConfig,
     catalog_hash: str,
 ) -> SessionResult:
-    """Simulate an agent session (with upsell)."""
+    """Simulate an agent session with dynamic upsell."""
     start = time.time()
 
-    # Random budget (slightly higher to allow upsell room)
     budget = random.randint(config.min_budget_paise, config.max_budget_paise)
     cart_size = random.randint(1, min(3, len(items)))
     cart_items_raw = random.sample(items, cart_size)
 
-    # Initialize budget
     budget_ledger.init_session_budget(session_id, budget)
 
-    # Build intent
     cart_items = [CartItem(item_id=item.item_id, quantity=1) for item in cart_items_raw]
     total = sum(item.price_paise for item in cart_items_raw)
 
@@ -140,7 +194,6 @@ def _run_agent_session(
         intent_type="checkout",
     )
 
-    # Run through guardrail
     decision = guardrail_service.check_spend(intent)
 
     if decision.decision != Decision.PASS:
@@ -154,7 +207,7 @@ def _run_agent_session(
             failure_class=decision.failure_class.value if decision.failure_class else None,
         )
 
-    # Base cart passed — try upsell
+    # Base cart passed — try dynamic upsell
     upsell_offered = False
     upsell_accepted = False
     upsell_amount = 0
@@ -174,8 +227,8 @@ def _run_agent_session(
 
             if offer_response.offer:
                 upsell_offered = True
-                # Simulate 60% acceptance rate
-                if random.random() < 0.6:
+                # Dynamic acceptance based on price elasticity & budget headroom
+                if _simulate_upsell_acceptance(offer_response.offer.price_paise, remaining):
                     accept_response = upsell_service.accept_upsell(UpsellAcceptRequest(
                         session_id=session_id,
                         offer=offer_response.offer,

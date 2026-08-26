@@ -17,7 +17,7 @@ services:
       - key: LOG_LEVEL
         value: INFO
       - key: ALLOWED_HOSTS
-        value: "*"
+        value: "agentic-commerce-zyoy.onrender.com,*.onrender.com,localhost,127.0.0.1"
       - key: DATABASE_URL
         fromDatabase:
           name: agentic-commerce-db

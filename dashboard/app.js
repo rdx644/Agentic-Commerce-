@@ -43,12 +43,30 @@ function setConnectionStatus(label, state) {
 
 // ── SSE Connection ──────────────────────────────────────────────────────────
 
-function connectSSE() {
+async function connectSSE() {
     if (eventSource) {
         eventSource.close();
     }
-    const qs = authToken ? `?token=${encodeURIComponent(authToken)}` : '';
-    eventSource = new EventSource(`/audit/stream${qs}`);
+
+    let streamUrl = '/audit/stream';
+    if (authToken) {
+        try {
+            const ticketResp = await fetch('/auth/stream-ticket', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            if (ticketResp.ok) {
+                const data = await ticketResp.json();
+                if (data && data.ticket) {
+                    streamUrl = `/audit/stream?ticket=${encodeURIComponent(data.ticket)}`;
+                }
+            }
+        } catch (err) {
+            console.warn('Failed to obtain single-use stream ticket:', err);
+        }
+    }
+
+    eventSource = new EventSource(streamUrl);
 
     eventSource.onopen = () => {
         setConnectionStatus('Live', 'live');
@@ -75,7 +93,6 @@ function connectSSE() {
 
     eventSource.onerror = (e) => {
         setConnectionStatus('Reconnecting', 'error');
-        // If auth fails, we likely get disconnected or 401. Re-check stats to trigger login if needed.
         apiFetch('/audit/stats').catch(() => {});
         setTimeout(connectSSE, 5000);
     };
@@ -373,16 +390,25 @@ function updateCampaignChart(report) {
     campaignChart.update();
 
     document.getElementById('campaign-badge').textContent =
-        `${report.total_sessions} sessions`;
+        `${report.total_sessions} sessions (${report.num_trials || 5} MC Trials)`;
     document.getElementById('campaign-metrics').classList.remove('is-hidden');
     document.getElementById('metric-conv-lift').textContent =
-        `${report.conversion_lift_pct > 0 ? '+' : ''}${report.conversion_lift_pct}%`;
+        `${report.mean_revenue_lift_pct !== undefined ? (report.mean_revenue_lift_pct > 0 ? '+' : '') + report.mean_revenue_lift_pct : report.conversion_lift_pct}%`;
     document.getElementById('metric-basket-lift').textContent =
         `${report.basket_lift_pct > 0 ? '+' : ''}${report.basket_lift_pct}%`;
     document.getElementById('metric-revenue-delta').textContent =
         `₹${(report.revenue_delta_paise / 100).toLocaleString()}`;
     document.getElementById('metric-upsell-rate').textContent =
         `${(report.agent_upsell_rate * 100).toFixed(1)}%`;
+    
+    const ciElem = document.getElementById('metric-ci');
+    if (ciElem && report.ci_95_lower !== undefined) {
+        ciElem.textContent = `[${report.ci_95_lower > 0 ? '+' : ''}${report.ci_95_lower}%, ${report.ci_95_upper > 0 ? '+' : ''}${report.ci_95_upper}%]`;
+    }
+    const stdElem = document.getElementById('metric-std-dev');
+    if (stdElem && report.std_deviation_pct !== undefined) {
+        stdElem.textContent = `±${report.std_deviation_pct}%`;
+    }
 }
 
 function updateFailureChart(failures) {

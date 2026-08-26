@@ -13,12 +13,12 @@ from fastapi.responses import StreamingResponse
 
 from src.audit import service as audit_service
 from src.database import get_db
-from src.security.auth import require_operator
+from src.security.auth import require_operator, require_operator_or_ticket
 
-router = APIRouter(prefix="/audit", tags=["audit"], dependencies=[Depends(require_operator)])
+router = APIRouter(prefix="/audit", tags=["audit"])
 
 
-@router.get("/trail", summary="Audit Trail")
+@router.get("/trail", summary="Audit Trail", dependencies=[Depends(require_operator)])
 async def get_trail(
     session_id: str = Query(None),
     action: str = Query(None),
@@ -36,23 +36,23 @@ async def get_trail(
     )
 
 
-@router.get("/stats", summary="Audit Statistics")
+@router.get("/stats", summary="Audit Statistics", dependencies=[Depends(require_operator)])
 async def get_stats():
     """Aggregate statistics from the audit trail."""
     return audit_service.get_audit_stats()
 
 
-@router.get("/session/{session_id}", summary="Session Detail")
+@router.get("/session/{session_id}", summary="Session Detail", dependencies=[Depends(require_operator)])
 async def get_session(session_id: str):
     """Full detail for a specific session — audit trail + budget + payments."""
     return audit_service.get_session_detail(session_id)
 
 
 @router.get("/stream", summary="Real-time SSE Stream")
-async def stream_audit():
+async def stream_audit(auth_user: str = Depends(require_operator_or_ticket)):
     """
     Server-Sent Events stream of audit log entries.
-    The dashboard connects here for real-time updates.
+    Authenticated via single-use 30-second stream ticket or Authorization header.
     """
     async def event_generator():
         last_id = 0

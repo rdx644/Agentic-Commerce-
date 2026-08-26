@@ -37,6 +37,7 @@ from src.upsell.router import router as upsell_router
 from src.campaign.router import router as campaign_router
 from src.audit.router import router as audit_router
 from src.security.auth import router as auth_router
+from src.agent_protocol.router import router as agent_protocol_router
 
 
 @asynccontextmanager
@@ -211,6 +212,7 @@ app.include_router(upsell_router)
 app.include_router(campaign_router)
 app.include_router(audit_router)
 app.include_router(auth_router)
+app.include_router(agent_protocol_router)
 
 # Serve dashboard static files
 import os
@@ -234,7 +236,12 @@ async def api_index():
         "track": "01 — AI Growth & Agentic Commerce",
         "endpoints": {
             "health": "/health",
+            "agent_discovery": "/.well-known/agent.json",
             "ucp_discovery": "/.well-known/ucp",
+            "agent_catalog": "/agent/catalog",
+            "agent_checkout": "/agent/checkout",
+            "agent_authorize": "/agent/authorize",
+            "agent_payment": "/agent/payment",
             "catalog": "/catalog",
             "checkout": "/checkout/converse",
             "guardrail": "/guardrail/check",

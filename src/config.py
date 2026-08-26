@@ -43,8 +43,8 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # Comma-separated settings work well with standard container platforms.
-    allowed_hosts: str = "localhost,127.0.0.1"
-    cors_origins: str = "http://localhost:8000,http://127.0.0.1:8000"
+    allowed_hosts: str = "agentic-commerce-zyoy.onrender.com,*.onrender.com,localhost,127.0.0.1"
+    cors_origins: str = "https://agentic-commerce-zyoy.onrender.com,http://localhost:8000,http://127.0.0.1:8000"
 
     # ── Guardrail ─────────────────────────────────────────────────────────
     max_consecutive_rejections: int = 5

@@ -70,9 +70,10 @@ async def receive_webhook(request: Request):
         logger.info("Ignoring unhandled event type: %s", event_type)
         return {"status": "ignored", "event_type": event_type}
 
-    # ── Dedup check ───────────────────────────────────────────────────────
-    if webhook_handler.is_duplicate_event(event_id):
-        logger.info("Duplicate webhook event: %s", event_id)
+    # ── Atomic Dedup check ────────────────────────────────────────────────
+    is_new = webhook_handler.record_and_deduplicate_event(event_id, event_type, payload)
+    if not is_new:
+        logger.info("Duplicate webhook event atomically discarded: %s", event_id)
         return {"status": "duplicate", "event_id": event_id}
 
     # ── Ack fast, process async ───────────────────────────────────────────

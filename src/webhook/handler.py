@@ -28,11 +28,16 @@ def verify_signature(raw_body: bytes, received_signature: str) -> bool:
     """
     HMAC-SHA256 signature verification — hard gate.
     Uses raw body (not parsed JSON) to prevent signature mismatch.
+    FAILS CLOSED: Rejects unsigned or improperly configured webhooks without exception.
     """
+    if not received_signature:
+        logger.warning("Webhook verification failed: missing x-razorpay-signature header (FAIL CLOSED)")
+        return False
+
     settings = get_settings()
     if not settings.razorpay_webhook_secret:
-        logger.warning("Webhook secret not configured — skipping verification in dev mode")
-        return True
+        logger.error("Webhook verification failed: RAZORPAY_WEBHOOK_SECRET is not configured (FAIL CLOSED)")
+        return False
 
     expected = hmac.new(
         settings.razorpay_webhook_secret.encode("utf-8"),
@@ -43,8 +48,29 @@ def verify_signature(raw_body: bytes, received_signature: str) -> bool:
     return hmac.compare_digest(expected, received_signature)
 
 
+def record_and_deduplicate_event(event_id: str, event_type: str, payload: dict) -> bool:
+    """
+    Atomically insert the event into webhook_events with ON CONFLICT DO NOTHING.
+    Returns True if this is a NEW event (inserted successfully).
+    Returns False if the event was ALREADY present (atomic deduplication, zero race conditions).
+    """
+    if not event_id:
+        return True
+
+    with get_db_transaction() as conn:
+        cursor = conn.execute(
+            """
+            INSERT INTO webhook_events (event_id, event_type, payload_json, processed)
+            VALUES (%s, %s, %s, 1)
+            ON CONFLICT (event_id) DO NOTHING
+            """,
+            (event_id, event_type, json.dumps(payload)),
+        )
+        return cursor.rowcount == 1
+
+
 def is_duplicate_event(event_id: str) -> bool:
-    """Check if we've already processed this event (dedup)."""
+    """Check if we've already processed this event (kept for backward compatibility)."""
     with get_db() as conn:
         row = conn.execute(
             "SELECT processed FROM webhook_events WHERE event_id = %s",
@@ -63,20 +89,6 @@ def process_webhook_event(event_id: str, event_type: str, payload: dict) -> dict
     - payment.failed: Trigger reconciliation
     - order.paid: Update order status
     """
-    # Store event for dedup
-    with get_db_transaction() as conn:
-        try:
-            conn.execute(
-                """
-                INSERT INTO webhook_events (event_id, event_type, payload_json, processed)
-                VALUES (%s, %s, %s, 1)
-                """,
-                (event_id, event_type, json.dumps(payload)),
-            )
-        except Exception:
-            # Already processed (race condition in concurrent processing)
-            logger.info("Event %s already processed (concurrent insert)", event_id)
-            return {"status": "already_processed"}
 
     # Extract payment/order info from payload
     entity = payload.get("payload", {})

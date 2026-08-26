@@ -100,7 +100,7 @@
             </div>
             <div class="campaign-metrics is-hidden" id="campaign-metrics">
                 <div class="metric">
-                    <span class="metric-label">Conversion Lift</span>
+                    <span class="metric-label">Mean Uplift</span>
                     <span class="metric-value" id="metric-conv-lift">—</span>
                 </div>
                 <div class="metric">
@@ -114,6 +114,14 @@
                 <div class="metric">
                     <span class="metric-label">Upsell Rate</span>
                     <span class="metric-value" id="metric-upsell-rate">—</span>
+                </div>
+                <div class="metric" title="95% Confidence Interval across Monte Carlo randomized trials">
+                    <span class="metric-label">95% CI (Lift)</span>
+                    <span class="metric-value" id="metric-ci">—</span>
+                </div>
+                <div class="metric" title="Standard Deviation across Monte Carlo runs">
+                    <span class="metric-label">Std Dev (σ)</span>
+                    <span class="metric-value" id="metric-std-dev">—</span>
                 </div>
             </div>
         </section>
