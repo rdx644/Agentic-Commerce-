@@ -90,23 +90,34 @@ def _heuristic_parse(message: str, catalog_items: list[dict]) -> ParsedIntent:
         item_name = item["name"].lower()
         item_id = item["item_id"].lower()
         score = 0
+        matched_phrase = item_name
         
         # Exact name match
         if item_name in msg_lower or item_id in msg_lower:
             score += 100
         else:
-            # Token match
-            tokens = [t for t in item_name.split() if len(t) > 2]
-            for t in tokens:
-                if t in msg_lower:
-                    score += 20
+            # Check keywords/aliases
+            for kw in item.get("keywords", []):
+                if kw in msg_lower:
+                    score += 60
+                    matched_phrase = kw
+                    break
+            if score == 0:
+                # Token match
+                tokens = [t for t in item_name.split() if len(t) > 2]
+                for t in tokens:
+                    if t in msg_lower:
+                        score += 25
+                        matched_phrase = t
         
         if score > 0:
-            # Extract quantity near the item name if possible
+            # Extract quantity near the item or matched phrase
             qty = 1
-            qty_match = re.search(rf"(\d+)\s*(?:x\s*)?(?:of\s+)?{re.escape(item_name)}", msg_lower)
+            qty_match = re.search(rf"(\d+)\s*(?:x\s*)?(?:of\s+)?{re.escape(matched_phrase)}", msg_lower)
             if not qty_match:
-                qty_match = re.search(rf"{re.escape(item_name)}\s*(?:x\s*)?(\d+)", msg_lower)
+                qty_match = re.search(rf"{re.escape(matched_phrase)}\s*(?:x\s*)?(\d+)", msg_lower)
+            if not qty_match:
+                qty_match = re.search(rf"(\d+)\s*(?:x\s*)?(?:of\s+)?{re.escape(item_name)}", msg_lower)
             if not qty_match:
                 # Generic leading quantity like "buy 2 ..."
                 leading_qty = re.search(r"(?:buy|order|purchase|get|want)\s+(\d+)\b", msg_lower)
@@ -133,13 +144,13 @@ def _heuristic_parse(message: str, catalog_items: list[dict]) -> ParsedIntent:
             clarification_needed=f"I could not identify any products from our catalog in your message. Available items include: {available_names}.",
         )
 
-    # Pick the best matched item(s) (highest scoring items)
+    # Pick the best matched item(s) (distinct items with score >= 40 or the top score)
     top_score = scored_items[0][0]
     selected_items = [
         ParsedCartItem(item_id=it[1]["item_id"], quantity=it[2])
         for it in scored_items
-        if it[0] >= top_score - 10
-    ][:3]
+        if it[0] >= 40 or it[0] == top_score
+    ][:5]
 
     # Calculate default ceiling if none provided (120% of catalog price)
     if budget_paise is None:

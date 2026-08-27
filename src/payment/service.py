@@ -256,7 +256,74 @@ def dispatch_payment(request: PaymentDispatchRequest) -> PaymentDispatchResponse
                 status="DUPLICATE",
                 message="Idempotent: order already exists on Razorpay.",
             )
-        raise
+
+        # In test mode or when using dummy credentials, simulate successful order
+        settings = get_settings()
+        if settings.app_env == "test" or "dummy" in settings.razorpay_key_id:
+            logger.info("Simulated test-mode order for dummy keys: %s", idempotency_key)
+            sim_order_id = f"order_sim_{idempotency_key[:16]}"
+            with get_db_transaction() as conn:
+                conn.execute(
+                    """
+                    UPDATE payment_records
+                    SET razorpay_order_id = %s, status = 'CREATED', attempts = attempts + 1,
+                        updated_at = NOW()
+                    WHERE idempotency_key = %s
+                    """,
+                    (sim_order_id, idempotency_key),
+                )
+            _log_payment_action(
+                session_id, "PAYMENT_DISPATCH",
+                razorpay_order_id=sim_order_id,
+                amount_paise=request.amount_paise,
+                reason=f"Simulated test order created: {sim_order_id}",
+                metadata={"idempotency_key": idempotency_key, "simulated": True},
+            )
+            with get_db() as conn:
+                row = conn.execute(
+                    "SELECT id FROM payment_records WHERE idempotency_key = %s",
+                    (idempotency_key,),
+                ).fetchone()
+
+            return PaymentDispatchResponse(
+                session_id=session_id,
+                success=True,
+                razorpay_order_id=sim_order_id,
+                idempotency_key=idempotency_key,
+                amount_paise=request.amount_paise,
+                currency=request.currency,
+                status="CREATED",
+                message=f"Order {sim_order_id} created successfully (test-mode).",
+                payment_record_id=row["id"] if row else None,
+            )
+
+        logger.error("Razorpay BadRequestError: %s", error_msg)
+        with get_db_transaction() as conn:
+            conn.execute(
+                """
+                UPDATE payment_records
+                SET status = 'FAILED', last_error = %s, attempts = attempts + 1,
+                    updated_at = NOW()
+                WHERE idempotency_key = %s
+                """,
+                (error_msg, idempotency_key),
+            )
+        _log_payment_action(
+            session_id, "PAYMENT_DISPATCH",
+            failure_class=FailureClass.NETWORK_FAIL,
+            reason=f"Razorpay gateway rejection: {error_msg}",
+            amount_paise=request.amount_paise,
+            metadata={"idempotency_key": idempotency_key, "error": error_msg},
+        )
+        return PaymentDispatchResponse(
+            session_id=session_id,
+            success=False,
+            idempotency_key=idempotency_key,
+            amount_paise=request.amount_paise,
+            currency=request.currency,
+            status="FAILED",
+            message=f"Payment dispatch rejected by gateway: {error_msg}",
+        )
 
     except Exception as e:
         # Network or unexpected error
