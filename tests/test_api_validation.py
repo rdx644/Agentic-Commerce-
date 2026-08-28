@@ -16,7 +16,6 @@ import json
 import pytest
 from unittest.mock import patch, MagicMock
 from fastapi import HTTPException
-from fastapi.security import HTTPBasicCredentials
 from fastapi.testclient import TestClient
 
 
@@ -32,7 +31,6 @@ def client():
             from src.main import app
 
             # Add testserver to allowed hosts for testing
-            from fastapi.middleware.trustedhost import TrustedHostMiddleware
             # The test client sends Host: testserver by default
             # We need to patch the middleware config or use the test client
             # with a matching host header

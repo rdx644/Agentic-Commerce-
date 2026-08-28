@@ -7,7 +7,6 @@ The audit trail is a real table, not app logs.
 
 from __future__ import annotations
 
-import json
 import logging
 from typing import Optional
 

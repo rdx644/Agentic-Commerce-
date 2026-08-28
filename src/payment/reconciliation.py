@@ -17,10 +17,7 @@ from __future__ import annotations
 
 import json
 import logging
-import random
 import time
-from datetime import datetime, timezone
-from typing import Optional
 
 from src.config import get_settings
 from src.database import get_db, get_db_transaction

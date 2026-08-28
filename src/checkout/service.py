@@ -13,11 +13,10 @@ Flow:
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from src.catalog import service as catalog_service
 from src.checkout.llm import parse_intent
-from src.checkout.models import CheckoutRequest, CheckoutResponse, ParsedIntent
+from src.checkout.models import CheckoutRequest, CheckoutResponse
 from src.guardrail.models import CartItem, Decision, SpendIntent
 from src.guardrail import service as guardrail_service
 

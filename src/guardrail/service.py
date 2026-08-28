@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
 
 from src.catalog import service as catalog_service
 from src.catalog.models import CatalogItem
@@ -155,7 +154,7 @@ def check_spend(intent: SpendIntent) -> GuardrailDecision:
                         f"drift={drift_result.drift_paise} paise"
                     ),
                 )],
-                reason=f"Catalog changed since quote (hash mismatch). Re-fetch catalog and retry.",
+                reason="Catalog changed since quote (hash mismatch). Re-fetch catalog and retry.",
                 failure_class=FailureClass.PRICE_DRIFT,
                 catalog_version=manifest.version,
                 catalog_hash=manifest.hash,

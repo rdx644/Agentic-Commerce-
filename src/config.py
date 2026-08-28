@@ -5,9 +5,7 @@ Razorpay keys, Gemini API key, JWT secret: NEVER hardcoded, NEVER committed.
 
 from __future__ import annotations
 
-import os
 from functools import lru_cache
-from typing import Literal
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict

@@ -7,7 +7,6 @@ and payment dispatch works correctly for both successful and rejected scenarios.
 
 from __future__ import annotations
 
-import json
 import uuid
 import pytest
 from unittest.mock import patch, MagicMock

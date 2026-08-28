@@ -8,7 +8,6 @@ against these models. The LLM never sets a price — it only references item_ids
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Optional
 
 from pydantic import BaseModel, Field
 

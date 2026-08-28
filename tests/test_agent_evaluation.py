@@ -14,7 +14,6 @@ prove it stays bounded.
 from __future__ import annotations
 
 import json
-import re
 import pytest
 from unittest.mock import patch, MagicMock
 
@@ -234,7 +233,7 @@ class TestGuardrailContracts:
 
     def test_budget_exceeded_always_rejected(self):
         """Invariant: Total > ceiling MUST always be rejected."""
-        from src.guardrail.models import CartItem, Decision, SpendIntent
+        from src.guardrail.models import CartItem, SpendIntent
 
         # Build intent where total exceeds ceiling
         intent = SpendIntent(
@@ -253,7 +252,7 @@ class TestGuardrailContracts:
 
     def test_capability_token_has_required_claims(self):
         """Invariant: Issued tokens must have iss, aud, exp, session_id, max_spend_paise."""
-        from src.security.tokens import issue_capability_token, verify_capability_token
+        from src.security.tokens import issue_capability_token
         import jwt
 
         # Patch settings to have a known JWT secret
@@ -389,7 +388,7 @@ class TestWorkflowDurability:
     def test_non_retryable_error_stops_workflow(self):
         """Non-retryable errors must not be retried."""
         from src.payment.workflow import (
-            WorkflowState, WorkflowStep, FailureType, should_retry,
+            WorkflowState, FailureType, should_retry,
         )
 
         state = WorkflowState(session_id="test")

@@ -6,14 +6,13 @@ from __future__ import annotations
 
 import asyncio
 import json
-import time
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 
 from src.audit import service as audit_service
 from src.database import get_db
-from src.security.auth import require_operator, require_operator_optional, require_operator_or_ticket
+from src.security.auth import require_operator_optional, require_operator_or_ticket
 
 router = APIRouter(prefix="/audit", tags=["audit"])
 

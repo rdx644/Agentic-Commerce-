@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Optional
 
 from src.catalog import service as catalog_service
 from src.guardrail.models import CartItem, Decision, SpendIntent

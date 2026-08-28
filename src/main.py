@@ -7,12 +7,13 @@ Mounts all routers, initializes database, serves dashboard.
 from __future__ import annotations
 
 import logging
+import os
 import platform
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
 # pyrefly: ignore [missing-import]
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 # pyrefly: ignore [missing-import]
 from fastapi.staticfiles import StaticFiles
 # pyrefly: ignore [missing-import]
@@ -25,7 +26,6 @@ from src.config import get_settings
 from src.database import init_db
 from src.observability import setup_observability
 from src.security.middleware import SecurityHeadersMiddleware, RequestSizeLimitMiddleware
-from src.security.auth import require_operator
 
 # Import routers
 from src.catalog.router import router as catalog_router
@@ -215,7 +215,6 @@ app.include_router(auth_router)
 app.include_router(agent_protocol_router)
 
 # Serve dashboard static files
-import os
 dashboard_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "dashboard")
 if os.path.exists(dashboard_dir):
     app.mount("/dashboard/static", StaticFiles(directory=dashboard_dir), name="dashboard-static")

@@ -11,7 +11,6 @@ Implements open agent protocol standards (NPCI UAP, ACP, AP2, x402, UCP):
 
 from __future__ import annotations
 
-import json
 import logging
 import uuid
 from typing import List, Optional

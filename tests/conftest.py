@@ -1,6 +1,5 @@
 import os
 import socket
-import pytest
 
 # Ensure testing settings are set before test suite execution
 os.environ["APP_ENV"] = "test"

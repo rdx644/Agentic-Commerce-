@@ -19,7 +19,6 @@ from typing import Optional
 
 from src.config import get_settings
 from src.database import get_db, get_db_transaction
-from src.guardrail.models import FailureClass
 
 logger = logging.getLogger(__name__)
 

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import os
 import uuid
 import pytest
 import razorpay

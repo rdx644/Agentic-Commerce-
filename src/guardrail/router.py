@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from src.guardrail.models import SpendIntent, GuardrailDecision, SessionBudgetState
 from src.guardrail import service as guardrail_service
+from src.guardrail import ledger as budget_ledger
 from src.security.auth import require_operator, require_operator_optional
 
 router = APIRouter(prefix="/guardrail", tags=["guardrail"])
