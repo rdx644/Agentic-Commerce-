@@ -11,7 +11,7 @@ let campaignChart = null;
 let failureChart = null;
 let lastStats = null;
 let authToken = localStorage.getItem('agentic_auth_token') || '';
-
+let pendingSessionRetry = null;
 let reconnectTimeout = null;
 
 async function apiFetch(url, options = {}) {
@@ -21,8 +21,13 @@ async function apiFetch(url, options = {}) {
     }
     options.headers = headers;
     const res = await fetch(url, options);
-    if (res.status === 401 && !url.includes('/audit/stats') && !url.includes('/audit/trail') && !url.includes('/audit/stream')) {
-        document.getElementById('login-modal').classList.add('open');
+    if (res.status === 401) {
+        // Clear stale token if unauthorized
+        authToken = '';
+        localStorage.removeItem('agentic_auth_token');
+        if (!url.includes('/audit/stats') && !url.includes('/audit/trail') && !url.includes('/audit/stream') && !url.includes('/audit/session/')) {
+            document.getElementById('login-modal').classList.add('open');
+        }
         throw new Error('Unauthorized');
     }
     return res;
@@ -607,6 +612,7 @@ async function openSessionDetail(sessionId) {
     const overlay = document.getElementById('modal-overlay');
     const body = document.getElementById('modal-body');
     overlay.classList.add('open');
+    pendingSessionRetry = sessionId;
     
     // Skeleton Pulse for lazy-load instant visual feedback
     const skeleton = document.createElement('div');
@@ -622,11 +628,25 @@ async function openSessionDetail(sessionId) {
     body.replaceChildren(skeleton);
 
     try {
-        const resp = await apiFetch(`/audit/session/${sessionId}`);
+        const resp = await apiFetch(`/audit/session/${encodeURIComponent(sessionId)}`);
+        if (!resp.ok) {
+            throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+        }
         const detail = await resp.json();
         renderSessionDetail(detail);
     } catch (e) {
-        body.replaceChildren(makeElement('p', 'modal-message is-error', `Failed to load: ${e.message}`));
+        const errContainer = document.createElement('div');
+        errContainer.className = 'modal-error-box';
+        errContainer.innerHTML = `
+            <p class="modal-message is-error" style="color: #ff3344; margin-bottom: 12px;">Failed to load session detail: ${e.message}</p>
+            <div style="display: flex; gap: 8px; margin-top: 10px;">
+                <button class="btn btn-primary" type="button" id="retry-session-btn">⚡ Retry</button>
+                <button class="btn" type="button" id="open-login-btn">🔑 Operator Login</button>
+            </div>
+        `;
+        body.replaceChildren(errContainer);
+        document.getElementById('retry-session-btn')?.addEventListener('click', () => openSessionDetail(sessionId));
+        document.getElementById('open-login-btn')?.addEventListener('click', () => document.getElementById('login-modal').classList.add('open'));
     }
 }
 
@@ -665,7 +685,7 @@ function closeModal() {
 
 // ── Init ────────────────────────────────────────────────────────────────────
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('login-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const fd = new URLSearchParams();
@@ -685,16 +705,17 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('login-modal').classList.remove('open');
             document.getElementById('login-error').style.display = 'none';
             // Reload data
-            initData();
+            await initData();
+            // If user had a pending session modal open, reload it with fresh auth
+            if (pendingSessionRetry && document.getElementById('modal-overlay').classList.contains('open')) {
+                openSessionDetail(pendingSessionRetry);
+            }
         } catch(err) {
             document.getElementById('login-error').style.display = 'block';
         }
     });
 
     initCharts();
-    initData();
-    connectSSE();
-    refreshTrail();
     initBlueprintCoordinates();
     
     const tableWrapper = document.querySelector('.audit-table-wrapper');
@@ -720,6 +741,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('modal-overlay').addEventListener('click', (event) => {
         if (event.target.id === 'modal-overlay') closeModal();
     });
+
+    await initData();
 });
 
 function initBlueprintCoordinates() {

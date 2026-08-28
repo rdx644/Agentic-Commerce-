@@ -42,7 +42,7 @@ async def get_stats():
     return audit_service.get_audit_stats()
 
 
-@router.get("/session/{session_id}", summary="Session Detail", dependencies=[Depends(require_operator)])
+@router.get("/session/{session_id}", summary="Session Detail", dependencies=[Depends(require_operator_optional)])
 async def get_session(session_id: str):
     """Full detail for a specific session — audit trail + budget + payments."""
     return audit_service.get_session_detail(session_id)

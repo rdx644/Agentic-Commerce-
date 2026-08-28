@@ -8,8 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from src.guardrail.models import SpendIntent, GuardrailDecision, SessionBudgetState
 from src.guardrail import service as guardrail_service
-from src.guardrail import ledger as budget_ledger
-from src.security.auth import require_operator
+from src.security.auth import require_operator, require_operator_optional
 
 router = APIRouter(prefix="/guardrail", tags=["guardrail"])
 
@@ -24,7 +23,7 @@ async def check_spend(intent: SpendIntent):
 
 
 @router.get("/session/{session_id}", response_model=SessionBudgetState, summary="Session Budget State")
-async def get_session_state(session_id: str, _: None = Depends(require_operator)):
+async def get_session_state(session_id: str, _: str = Depends(require_operator_optional)):
     """Get current budget state for a session."""
     state = budget_ledger.get_session_state(session_id)
     if state is None:
