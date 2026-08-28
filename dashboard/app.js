@@ -442,12 +442,33 @@ function updateFailureChart(failures) {
     failureChart.update();
 }
 
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    if (type === 'error') {
+        toast.style.borderColor = 'var(--redline-accent)';
+        toast.style.boxShadow = '0 0 10px rgba(255, 51, 51, 0.3)';
+    } else if (type === 'success') {
+        toast.style.borderColor = '#00FF9D';
+        toast.style.boxShadow = '0 0 10px rgba(0, 255, 157, 0.3)';
+    }
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
 // ── Campaign ────────────────────────────────────────────────────────────────
 
 async function runCampaign() {
     const btn = document.getElementById('run-campaign');
     btn.disabled = true;
-    btn.innerHTML = '<span class="btn-spinner"></span> Running campaign…';
+    btn.innerHTML = '<span class="btn-spinner"></span> RUNNING CAMPAIGN…';
 
     try {
         const resp = await apiFetch('/campaign/run', {
@@ -457,6 +478,7 @@ async function runCampaign() {
         });
         const report = await resp.json();
         updateCampaignChart(report);
+        showToast(`Campaign completed: ${report.total_sessions} sessions evaluated (${report.conversion_lift_pct > 0 ? '+' : ''}${report.conversion_lift_pct}% lift)`, 'success');
 
         // Refresh stats
         const statsResp = await apiFetch('/audit/stats');
@@ -467,10 +489,10 @@ async function runCampaign() {
         refreshTrail();
     } catch (e) {
         console.error('Campaign failed:', e);
-        alert('Campaign run failed. Check console for details.');
+        showToast(`Campaign run failed: ${e.message}`, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = 'Run campaign';
+        btn.innerHTML = 'RUN CAMPAIGN';
     }
 }
 
@@ -735,11 +757,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             simulateCheckout();
         });
     });
-    document.getElementById('filter-action').addEventListener('change', refreshTrail);
-    document.getElementById('filter-failure').addEventListener('change', refreshTrail);
-    document.getElementById('close-modal').addEventListener('click', closeModal);
-    document.getElementById('modal-overlay').addEventListener('click', (event) => {
+    document.getElementById('filter-action')?.addEventListener('change', refreshTrail);
+    document.getElementById('filter-failure')?.addEventListener('change', refreshTrail);
+    document.getElementById('close-modal')?.addEventListener('click', closeModal);
+    document.getElementById('modal-overlay')?.addEventListener('click', (event) => {
         if (event.target.id === 'modal-overlay') closeModal();
+    });
+    document.getElementById('close-login-modal')?.addEventListener('click', () => {
+        document.getElementById('login-modal')?.classList.remove('open');
+    });
+    document.getElementById('login-modal')?.addEventListener('click', (event) => {
+        if (event.target.id === 'login-modal') {
+            document.getElementById('login-modal')?.classList.remove('open');
+        }
     });
 
     await initData();
@@ -753,26 +783,6 @@ function initBlueprintCoordinates() {
         const y = String(e.clientY).padStart(4, '0');
         coordsElem.textContent = `COORD: X[${x}] Y[${y}] | 1:1`;
     }, { passive: true });
-}
-
-function removeSplineWatermark() {
-    const clean = () => {
-        const viewer = document.getElementById('spline-bg');
-        if (viewer && viewer.shadowRoot) {
-            const logo = viewer.shadowRoot.querySelector('#logo') ||
-                         viewer.shadowRoot.querySelector('a') ||
-                         viewer.shadowRoot.querySelector('.spline-watermark');
-            if (logo) {
-                logo.style.display = 'none';
-                logo.style.opacity = '0';
-                logo.style.pointerEvents = 'none';
-                logo.remove();
-            }
-        }
-    };
-    clean();
-    const interval = setInterval(clean, 200);
-    setTimeout(() => clearInterval(interval), 6000);
 }
 
 async function initData() {
@@ -808,7 +818,10 @@ async function initData() {
         .catch(console.error);
 }
 
-// Close modal on Escape
+// Close modals on Escape
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Escape') {
+        closeModal();
+        document.getElementById('login-modal')?.classList.remove('open');
+    }
 });
