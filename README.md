@@ -44,7 +44,7 @@ An enterprise-grade, mathematically bounded, explainable **Agentic Checkout & Pa
 3. **Zero-Trust Capability Tokens**: Issues signed, tamper-proof HMAC-SHA256 capability tokens with a 5-minute TTL that authorize one exact order.
 4. **Atomic Conditional Budget Ledger**: Single-statement conditional updates prevent double-spending, race conditions, and balance overruns across concurrent agent workers.
 5. **Fail-Closed Webhook Pipeline**: Webhook signatures are verified with constant-time HMAC-SHA256 comparison and deduplicated atomically (`ON CONFLICT DO NOTHING`).
-6. **Real-Time Blueprint Telemetry**: High-contrast, cyanotype-inspired dashboard with virtualized DOM scrolling (48px fixed row virtualization) and single-use ticket-authenticated SSE streaming.
+6. **Real-Time Blueprint Telemetry**: High-contrast, cyanotype-inspired dashboard with virtualized DOM scrolling and single-use ticket-authenticated SSE streaming.
 
 ---
 
