@@ -436,11 +436,46 @@ function updateCampaignChart(report) {
 }
 
 function updateFailureChart(failures) {
-    const labels = Object.keys(failures);
-    const data = Object.values(failures);
+    const rawKeys = Object.keys(failures || {});
+    const values = Object.values(failures || {});
+    const totalFailures = values.reduce((a, b) => a + b, 0);
 
-    failureChart.data.labels = labels;
-    failureChart.data.datasets[0].data = data;
+    const badge = document.getElementById('failure-badge');
+    if (badge) {
+        if (totalFailures === 0) {
+            badge.textContent = '0 Rejections (Nominal)';
+            badge.className = 'badge badge-pass';
+        } else {
+            badge.textContent = `${totalFailures} Rejection${totalFailures > 1 ? 's' : ''} Logged`;
+            badge.className = 'badge badge-reject';
+        }
+    }
+
+    if (rawKeys.length === 0 || totalFailures === 0) {
+        failureChart.data.labels = ['No Failures Logged'];
+        failureChart.data.datasets[0].data = [1];
+        failureChart.data.datasets[0].backgroundColor = ['rgba(255, 255, 255, 0.08)'];
+        failureChart.update();
+        return;
+    }
+
+    const formattedLabels = rawKeys.map(k => {
+        return k.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    });
+
+    const colors = [
+        '#FF3333',                   // Budget Exceeded (Redline)
+        '#00FFFF',                   // Price Drift (Cyan)
+        '#facc15',                   // Session Frozen (Amber)
+        '#a855f7',                   // Network Fail (Purple)
+        'rgba(255, 255, 255, 0.85)', // Webhook Mismatch (Chalk)
+        '#ec4899',                   // Unauthorized
+        '#f97316'                    // Dead Letter
+    ];
+
+    failureChart.data.labels = formattedLabels;
+    failureChart.data.datasets[0].data = values;
+    failureChart.data.datasets[0].backgroundColor = colors.slice(0, formattedLabels.length);
     failureChart.update();
 }
 
