@@ -57,23 +57,23 @@ To balance **zero-friction evaluator accessibility** with **strict enterprise le
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ 👁️ GUEST OBSERVER MODE (Default on Page Load)                                         │
-│ • Audience: Hackathon Judges, Public Auditors, External Consumers                     │
+│ • Audience: Hackathon Judges, Public Auditors, External Consumers                      │
 │ • Auth Barrier: None (Immediate Read-Only Access)                                      │
-│ • Available: Live SSE Telemetry, Virtualized Audit Trail, Checkout Simulator,         │
+│ • Available: Live SSE Telemetry, Virtualized Audit Trail, Checkout Simulator,          │
 │   Session Deep Dive with full Cryptographic Provenance.                                │
-│ • Protected Actions: Clicking "RUN CAMPAIGN" prompts login modal with 1-click helper. │
+│ • Protected Actions: Clicking "RUN CAMPAIGN" prompts login modal with 1-click helper.  │
 └───────────────────────────────────────────┬────────────────────────────────────────────┘
                                             │
                                  [🔑 1-Click Operator Login]
                                  (Razorpay / RazorPay@123456#)
                                             ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ 🛡️ AUTHENTICATED OPERATOR MODE                                                         │
+│ 🛡️ AUTHENTICATED OPERATOR MODE                                                        │
 │ • Audience: Store Managers, Finance Engineers, Administrators                          │
-│ • Auth Barrier: OAuth2 / RS256-HS256 Bearer Token stored in ephemeral sessionStorage    │
+│ • Auth Barrier: OAuth2 / RS256-HS256 Bearer Token stored in ephemeral sessionStorage   │
 │ • Available: 50-Trial Monte Carlo Campaign Simulation, Administrative Reconciliation   │
 │   Sweeps, Private Stream Ticket Minting.                                               │
-│ • Session Lifecycle: Terminated instantly on tab closure or by clicking [🚪 LOGOUT].  │
+│ • Session Lifecycle: Terminated instantly on tab closure or by clicking [🚪 LOGOUT].   │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
