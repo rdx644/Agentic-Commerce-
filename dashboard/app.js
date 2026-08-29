@@ -718,23 +718,41 @@ function closeModal() {
 function updateAuthUI() {
     const badge = document.getElementById('auth-badge');
     const btn = document.getElementById('header-auth-btn');
-    if (!badge || !btn) return;
+    const opBar = document.getElementById('operator-bar');
+    const opIndicator = document.getElementById('operator-mode-indicator');
+    
     if (authToken) {
-        badge.className = 'auth-badge operator';
-        badge.textContent = '🛡️ OPERATOR: RAZORPAY';
-        badge.title = 'Authenticated Operator: Full administrative, Monte Carlo campaign, and settlement privileges';
-        btn.textContent = '🚪 LOGOUT';
-        btn.style.color = 'var(--redline-accent)';
-        btn.style.borderColor = 'var(--redline-accent)';
-        btn.style.background = 'rgba(255, 51, 51, 0.08)';
+        if (badge) {
+            badge.className = 'auth-badge operator';
+            badge.textContent = '🛡️ OPERATOR: RAZORPAY';
+            badge.title = 'Authenticated Operator: Full administrative, Monte Carlo campaign, and settlement privileges';
+        }
+        if (btn) {
+            btn.textContent = '🚪 LOGOUT';
+            btn.style.color = 'var(--redline-accent)';
+            btn.style.borderColor = 'var(--redline-accent)';
+            btn.style.background = 'rgba(255, 51, 51, 0.08)';
+        }
+        if (opBar) opBar.classList.add('active');
+        if (opIndicator) {
+            opIndicator.innerHTML = '<strong style="color: #00FF9D;">🛡️ OPERATOR AUTHENTICATED: RAZORPAY</strong> &nbsp;|&nbsp; Full Administrative, Reconciliation & Monte Carlo Privileges';
+        }
     } else {
-        badge.className = 'auth-badge guest';
-        badge.textContent = '👁️ GUEST OBSERVER';
-        badge.title = 'Observer Mode: Real-time public audit streaming & checkout simulator active';
-        btn.textContent = '🔑 OPERATOR LOGIN';
-        btn.style.color = 'var(--measure-cyan)';
-        btn.style.borderColor = 'var(--measure-cyan)';
-        btn.style.background = 'rgba(0, 255, 255, 0.05)';
+        if (badge) {
+            badge.className = 'auth-badge guest';
+            badge.textContent = '👁️ GUEST OBSERVER';
+            badge.title = 'Observer Mode: Real-time public audit streaming & checkout simulator active';
+        }
+        if (btn) {
+            btn.textContent = '🔑 OPERATOR LOGIN';
+            btn.style.color = 'var(--measure-cyan)';
+            btn.style.borderColor = 'var(--measure-cyan)';
+            btn.style.background = 'rgba(0, 255, 255, 0.05)';
+        }
+        if (opBar) opBar.classList.remove('active');
+        if (opIndicator) {
+            opIndicator.textContent = '[👁️ Observer Mode] Authenticate as Operator to unlock full administrative controls';
+        }
     }
 }
 
@@ -745,6 +763,56 @@ function logout() {
     updateAuthUI();
     connectSSE();
     showToast('Logged out of Operator Mode. Switched to Guest Observer.', 'info');
+}
+
+async function reconcileAllPayments() {
+    if (!authToken) {
+        showToast('Operator authorization required to reconcile ledgers.', 'error');
+        document.getElementById('login-modal')?.classList.add('open');
+        return;
+    }
+    const btn = document.getElementById('btn-reconcile-all');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '🔄 RECONCILING...';
+    }
+    try {
+        const res = await apiFetch('/payment/reconcile-all', { method: 'POST' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        showToast(`Reconciliation complete: ${data.total} scanned, ${data.reconciled} reconciled, ${data.dead_lettered} dead-lettered`, 'success');
+        const statsResp = await apiFetch('/audit/stats');
+        updateStats(await statsResp.json());
+        refreshTrail();
+    } catch(err) {
+        showToast(`Reconciliation error: ${err.message}`, 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🔄 RECONCILE LEDGERS';
+        }
+    }
+}
+
+async function exportAuditLog() {
+    try {
+        showToast('Preparing audit log export...', 'info');
+        const res = await apiFetch('/audit/trail?limit=1000');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `agentic_commerce_audit_trail_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showToast(`Exported ${data.length} audit records to JSON.`, 'success');
+    } catch(err) {
+        showToast(`Export failed: ${err.message}`, 'error');
+    }
 }
 
 // ── Init ────────────────────────────────────────────────────────────────────
@@ -806,8 +874,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         tableWrapper.addEventListener('scroll', scheduleVirtualScroll, { passive: true });
     }
 
-    document.getElementById('run-campaign').addEventListener('click', runCampaign);
-    document.getElementById('send-checkout').addEventListener('click', simulateCheckout);
+    document.getElementById('run-campaign')?.addEventListener('click', runCampaign);
+    document.getElementById('btn-run-campaign-bar')?.addEventListener('click', runCampaign);
+    document.getElementById('btn-reconcile-all')?.addEventListener('click', reconcileAllPayments);
+    document.getElementById('btn-export-audit')?.addEventListener('click', exportAuditLog);
+    document.getElementById('send-checkout')?.addEventListener('click', simulateCheckout);
     document.getElementById('checkout-input').addEventListener('keydown', (event) => {
         if (event.key === 'Enter') simulateCheckout();
     });
