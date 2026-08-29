@@ -778,14 +778,17 @@ async function reconcileAllPayments() {
     }
     try {
         const res = await apiFetch('/payment/reconcile-all', { method: 'POST' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || `HTTP ${res.status}`);
+        }
         const data = await res.json();
-        showToast(`Reconciliation complete: ${data.total} scanned, ${data.reconciled} reconciled, ${data.dead_lettered} dead-lettered`, 'success');
+        showToast(`Reconciliation complete: ${data.total} scanned (${data.reconciled} reconciled, ${data.dead_lettered} dead-lettered)`, 'success');
         const statsResp = await apiFetch('/audit/stats');
-        updateStats(await statsResp.json());
+        if (statsResp.ok) updateStats(await statsResp.json());
         refreshTrail();
     } catch(err) {
-        showToast(`Reconciliation error: ${err.message}`, 'error');
+        showToast(`Reconciliation failed: ${err.message}`, 'error');
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -797,10 +800,14 @@ async function reconcileAllPayments() {
 async function exportAuditLog() {
     try {
         showToast('Preparing audit log export...', 'info');
-        const res = await apiFetch('/audit/trail?limit=1000');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const res = await apiFetch('/audit/trail?limit=500');
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || `HTTP ${res.status}`);
+        }
         const data = await res.json();
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const jsonContent = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonContent], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -809,8 +816,9 @@ async function exportAuditLog() {
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-        showToast(`Exported ${data.length} audit records to JSON.`, 'success');
+        showToast(`Exported ${Array.isArray(data) ? data.length : 0} audit records to JSON.`, 'success');
     } catch(err) {
+        console.error('Audit export failed:', err);
         showToast(`Export failed: ${err.message}`, 'error');
     }
 }

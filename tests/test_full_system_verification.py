@@ -190,3 +190,40 @@ def test_full_checkout_simulator_to_payment_pipeline(client):
     assert replay_resp.status_code == 200
     replay_data = replay_resp.json()
     assert replay_data["success"] is True
+
+
+def test_reconcile_all_and_audit_export_flow(client):
+    """Verify payment reconciliation endpoint gating and high-limit audit export."""
+    settings = get_settings()
+
+    # 1. Unauthenticated reconciliation must return 401
+    unauth_reconcile = client.post("/payment/reconcile-all")
+    assert unauth_reconcile.status_code == 401
+
+    # 2. Authenticate as operator
+    login_resp = client.post(
+        "/auth/token",
+        data={"username": settings.operator_username, "password": settings.operator_password}
+    )
+    assert login_resp.status_code == 200
+    token = login_resp.json()["access_token"]
+
+    # 3. Authenticated reconciliation must return summary
+    auth_reconcile = client.post(
+        "/payment/reconcile-all",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert auth_reconcile.status_code == 200
+    rec_data = auth_reconcile.json()
+    assert "total" in rec_data
+    assert "reconciled" in rec_data
+    assert "dead_lettered" in rec_data
+
+    # 4. Audit Trail Export with high limits (up to 1000 entries)
+    export_resp = client.get("/audit/trail?limit=500")
+    assert export_resp.status_code == 200
+    assert isinstance(export_resp.json(), list)
+
+    export_1000 = client.get("/audit/trail?limit=1000")
+    assert export_1000.status_code == 200
+    assert isinstance(export_1000.json(), list)

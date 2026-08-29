@@ -22,7 +22,7 @@ async def get_trail(
     session_id: str = Query(None),
     action: str = Query(None),
     failure_class: str = Query(None),
-    limit: int = Query(100, le=500),
+    limit: int = Query(100, le=1000),
     offset: int = Query(0, ge=0),
 ):
     """Query the audit trail with optional filters."""
