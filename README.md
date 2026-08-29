@@ -56,7 +56,7 @@ To balance **zero-friction evaluator accessibility** with **strict enterprise le
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ 👁️ GUEST OBSERVER MODE (Default on Page Load)                                         │
+│ 👁️ GUEST OBSERVER MODE (Default on Page Load)                                         |
 │ • Audience: Hackathon Judges, Public Auditors, External Consumers                      │
 │ • Auth Barrier: None (Immediate Read-Only Access)                                      │
 │ • Available: Live SSE Telemetry, Virtualized Audit Trail, Checkout Simulator,          │
@@ -68,12 +68,12 @@ To balance **zero-friction evaluator accessibility** with **strict enterprise le
                                  (Razorpay / RazorPay@123456#)
                                             ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ 🛡️ AUTHENTICATED OPERATOR MODE                                                        │
+│ 🛡️ AUTHENTICATED OPERATOR MODE                                                        |
 │ • Audience: Store Managers, Finance Engineers, Administrators                          │
 │ • Auth Barrier: OAuth2 / RS256-HS256 Bearer Token stored in ephemeral sessionStorage   │
 │ • Available: 50-Trial Monte Carlo Campaign Simulation, Administrative Reconciliation   │
 │   Sweeps, Private Stream Ticket Minting.                                               │
-│ • Session Lifecycle: Terminated instantly on tab closure or by clicking [🚪 LOGOUT].   │
+│ • Session Lifecycle: Terminated instantly on tab closure or by clicking [🚪 LOGOUT].  |
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
