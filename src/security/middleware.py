@@ -45,15 +45,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "camera=(), microphone=(), geolocation=(), payment=(self)"
         )
 
-        # The dashboard uses only external, same-origin assets and can therefore
-        # run without unsafe-inline. Chart.js remains explicitly allowlisted.
+        # Security headers with permissive font and stylesheet sources for dashboard blueprint
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' https://cdn.jsdelivr.net; "
-            "style-src 'self'; "
-            "font-src 'self'; "
-            "img-src 'self' data:; "
-            "connect-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com data:; "
+            "img-src 'self' data: https:; "
+            "connect-src 'self' https:; "
             "base-uri 'self'; "
             "form-action 'self'; "
             "frame-ancestors 'none'"
@@ -63,8 +62,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         if get_settings().app_env == "production":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
-        # API responses may contain capability tokens or payment/audit data.
-        if not request.url.path.startswith("/dashboard/static"):
+        # Prevent aggressive browser caching of dashboard assets & ensure API privacy
+        if request.url.path.startswith("/dashboard/static") or request.url.path == "/dashboard":
+            response.headers["Cache-Control"] = "no-cache, must-revalidate"
+        else:
             response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
             response.headers["Pragma"] = "no-cache"
 
