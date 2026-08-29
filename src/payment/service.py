@@ -151,34 +151,34 @@ def dispatch_payment(request: PaymentDispatchRequest) -> PaymentDispatchResponse
 
     # ── Step 3: Write PENDING to our ledger BEFORE calling Razorpay ───────
     with get_db_transaction() as conn:
-        try:
-            conn.execute(
-                """
-                INSERT INTO payment_records
-                (session_id, idempotency_key, amount_paise, currency, status)
-                VALUES (%s, %s, %s, %s, 'PENDING')
-                """,
-                (session_id, idempotency_key, request.amount_paise, request.currency),
+        conn.execute(
+            """
+            INSERT INTO payment_records
+            (session_id, idempotency_key, amount_paise, currency, status)
+            VALUES (%s, %s, %s, %s, 'PENDING')
+            ON CONFLICT (idempotency_key) DO NOTHING
+            """,
+            (session_id, idempotency_key, request.amount_paise, request.currency),
+        )
+
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM payment_records WHERE idempotency_key = %s",
+            (idempotency_key,),
+        ).fetchone()
+        if row and row["razorpay_order_id"]:
+            logger.info("Idempotent hit: returning existing order %s", row["razorpay_order_id"])
+            return PaymentDispatchResponse(
+                session_id=session_id,
+                success=True,
+                razorpay_order_id=row["razorpay_order_id"],
+                idempotency_key=idempotency_key,
+                amount_paise=request.amount_paise,
+                currency=request.currency,
+                status=row["status"],
+                message="Idempotent: returning existing order.",
+                payment_record_id=row["id"],
             )
-        except Exception:
-            # Idempotency key already exists — fetch existing record
-            row = conn.execute(
-                "SELECT * FROM payment_records WHERE idempotency_key = %s",
-                (idempotency_key,),
-            ).fetchone()
-            if row and row["razorpay_order_id"]:
-                logger.info("Idempotent hit: returning existing order %s", row["razorpay_order_id"])
-                return PaymentDispatchResponse(
-                    session_id=session_id,
-                    success=True,
-                    razorpay_order_id=row["razorpay_order_id"],
-                    idempotency_key=idempotency_key,
-                    amount_paise=request.amount_paise,
-                    currency=request.currency,
-                    status=row["status"],
-                    message="Idempotent: returning existing order.",
-                    payment_record_id=row["id"],
-                )
 
     # ── Step 4: Call Razorpay Orders API ──────────────────────────────────
     client = _get_razorpay_client()
