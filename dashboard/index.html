@@ -30,6 +30,10 @@
                     <span class="dot dot-connecting"></span>
                     <span>LINKING...</span>
                 </div>
+                <div id="auth-controls" style="display: flex; align-items: center; gap: 8px;">
+                    <span id="auth-badge" class="auth-badge guest" title="Observer Mode: Public live audit & checkout simulator active">👁️ GUEST OBSERVER</span>
+                    <button class="btn" id="header-auth-btn" type="button" style="font-size: 10px; padding: 6px 12px; border: 1px solid var(--measure-cyan); color: var(--measure-cyan); background: rgba(0, 255, 255, 0.05); cursor: pointer;">🔑 OPERATOR LOGIN</button>
+                </div>
                 <button class="btn btn-primary" id="run-campaign" type="button">RUN CAMPAIGN</button>
             </div>
         </div>
@@ -209,6 +213,11 @@
                 <button class="btn-close" id="close-login-modal" type="button" aria-label="Close login dialog">Close</button>
             </div>
             <div class="modal-body">
+                <div class="demo-cred-hint" style="background: rgba(0, 255, 255, 0.08); border: 1px dashed var(--measure-cyan); padding: 10px; margin-bottom: 16px; font-size: 11px;">
+                    <div style="color: var(--measure-cyan); font-weight: 700; margin-bottom: 4px;">⚡ HACKATHON DEMO OPERATOR CREDENTIALS:</div>
+                    <div style="color: rgba(255,255,255,0.8); font-size: 11px;">Username: <code style="color: #fff; background: rgba(0,0,0,0.4); padding: 2px 4px;">Razorpay</code> &nbsp;|&nbsp; Password: <code style="color: #fff; background: rgba(0,0,0,0.4); padding: 2px 4px;">RazorPay@123456#</code></div>
+                    <button type="button" id="autofill-demo-btn" style="margin-top: 8px; width: 100%; font-size: 11px; padding: 6px; background: rgba(0,255,255,0.15); border: 1px solid var(--measure-cyan); color: var(--measure-cyan); cursor: pointer; text-transform: uppercase; font-family: var(--font-mono); font-weight: 600;">⚡ 1-Click Autofill Credentials</button>
+                </div>
                 <form id="login-form">
                     <div class="input-group" style="margin-bottom: 1rem;">
                         <input type="text" id="login-username" class="text-input" placeholder="Username" required autocomplete="username" />
@@ -216,7 +225,7 @@
                     <div class="input-group" style="margin-bottom: 1rem;">
                         <input type="password" id="login-password" class="text-input" placeholder="Password" required autocomplete="current-password" />
                     </div>
-                    <button class="btn btn-primary" type="submit" style="width: 100%;">Login</button>
+                    <button class="btn btn-primary" type="submit" style="width: 100%;">Login as Operator</button>
                     <p id="login-error" style="color: #f87171; margin-top: 1rem; display: none;">Invalid credentials</p>
                 </form>
             </div>

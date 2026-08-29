@@ -10,7 +10,7 @@ let eventSource = null;
 let campaignChart = null;
 let failureChart = null;
 let lastStats = null;
-let authToken = localStorage.getItem('agentic_auth_token') || '';
+let authToken = sessionStorage.getItem('agentic_auth_token') || '';
 let pendingSessionRetry = null;
 let reconnectTimeout = null;
 
@@ -24,7 +24,9 @@ async function apiFetch(url, options = {}) {
     if (res.status === 401) {
         // Clear stale token if unauthorized
         authToken = '';
+        sessionStorage.removeItem('agentic_auth_token');
         localStorage.removeItem('agentic_auth_token');
+        updateAuthUI();
         if (!url.includes('/audit/stats') && !url.includes('/audit/trail') && !url.includes('/audit/stream') && !url.includes('/audit/session/')) {
             document.getElementById('login-modal').classList.add('open');
         }
@@ -466,6 +468,12 @@ function showToast(message, type = 'info') {
 // ── Campaign ────────────────────────────────────────────────────────────────
 
 async function runCampaign() {
+    if (!authToken) {
+        showToast('Operator authorization required to run Monte Carlo campaigns.', 'error');
+        document.getElementById('login-modal')?.classList.add('open');
+        return;
+    }
+
     const btn = document.getElementById('run-campaign');
     btn.disabled = true;
     btn.innerHTML = '<span class="btn-spinner"></span> RUNNING CAMPAIGN…';
@@ -707,6 +715,40 @@ function closeModal() {
 
 // ── Init ────────────────────────────────────────────────────────────────────
 
+function updateAuthUI() {
+    const badge = document.getElementById('auth-badge');
+    const btn = document.getElementById('header-auth-btn');
+    if (!badge || !btn) return;
+    if (authToken) {
+        badge.className = 'auth-badge operator';
+        badge.textContent = '🛡️ OPERATOR: RAZORPAY';
+        badge.title = 'Authenticated Operator: Full administrative, Monte Carlo campaign, and settlement privileges';
+        btn.textContent = '🚪 LOGOUT';
+        btn.style.color = 'var(--redline-accent)';
+        btn.style.borderColor = 'var(--redline-accent)';
+        btn.style.background = 'rgba(255, 51, 51, 0.08)';
+    } else {
+        badge.className = 'auth-badge guest';
+        badge.textContent = '👁️ GUEST OBSERVER';
+        badge.title = 'Observer Mode: Real-time public audit streaming & checkout simulator active';
+        btn.textContent = '🔑 OPERATOR LOGIN';
+        btn.style.color = 'var(--measure-cyan)';
+        btn.style.borderColor = 'var(--measure-cyan)';
+        btn.style.background = 'rgba(0, 255, 255, 0.05)';
+    }
+}
+
+function logout() {
+    authToken = '';
+    sessionStorage.removeItem('agentic_auth_token');
+    localStorage.removeItem('agentic_auth_token');
+    updateAuthUI();
+    connectSSE();
+    showToast('Logged out of Operator Mode. Switched to Guest Observer.', 'info');
+}
+
+// ── Init ────────────────────────────────────────────────────────────────────
+
 document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('login-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -720,12 +762,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: fd
             });
-            if (!res.ok) throw new Error('Login failed');
+            if (!res.ok) throw new Error('Invalid credentials');
             const data = await res.json();
             authToken = data.access_token;
-            localStorage.setItem('agentic_auth_token', authToken);
+            sessionStorage.setItem('agentic_auth_token', authToken);
             document.getElementById('login-modal').classList.remove('open');
             document.getElementById('login-error').style.display = 'none';
+            updateAuthUI();
+            showToast('Operator authenticated successfully: Razorpay', 'success');
+            
             // Reload data
             await initData();
             // If user had a pending session modal open, reload it with fresh auth
@@ -734,6 +779,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch(err) {
             document.getElementById('login-error').style.display = 'block';
+        }
+    });
+
+    document.getElementById('autofill-demo-btn')?.addEventListener('click', () => {
+        const userEl = document.getElementById('login-username');
+        const passEl = document.getElementById('login-password');
+        if (userEl) userEl.value = 'Razorpay';
+        if (passEl) passEl.value = 'RazorPay@123456#';
+        showToast('Demo credentials autofilled.', 'info');
+    });
+
+    document.getElementById('header-auth-btn')?.addEventListener('click', () => {
+        if (authToken) {
+            logout();
+        } else {
+            document.getElementById('login-modal')?.classList.add('open');
         }
     });
 
@@ -786,29 +847,7 @@ function initBlueprintCoordinates() {
 }
 
 async function initData() {
-    // Auto-authenticate demo operator credentials if no token exists
-    if (!authToken) {
-        try {
-            const fd = new URLSearchParams();
-            fd.append('username', 'Razorpay');
-            fd.append('password', 'RazorPay@123456#');
-            const res = await fetch('/auth/token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: fd
-            });
-            if (res.ok) {
-                const data = await res.json();
-                if (data && data.access_token) {
-                    authToken = data.access_token;
-                    localStorage.setItem('agentic_auth_token', authToken);
-                }
-            }
-        } catch (e) {
-            console.warn('Demo operator auto-auth failed, continuing as guest:', e);
-        }
-    }
-
+    updateAuthUI();
     connectSSE();
     refreshTrail();
     // Initial stats fetch
