@@ -528,9 +528,8 @@ async function simulateCheckout() {
     const msg = input.value.trim();
     if (!msg) return;
 
-    if (!currentCheckoutSession) {
-        currentCheckoutSession = 'demo-' + Math.random().toString(36).substring(2, 10);
-    }
+    // Fresh session ID for each independent simulation run
+    currentCheckoutSession = 'sim-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 6);
 
     const trigger = document.getElementById('send-checkout');
     const statusBadge = document.getElementById('checkout-status');
@@ -572,6 +571,10 @@ async function simulateCheckout() {
 
         const output = setCheckoutResponse(lines, isPass ? 'pass' : 'reject');
 
+        // Immediately update live audit trail and stats with the guardrail check event
+        refreshTrail();
+        apiFetch('/audit/stats').then(r => r.json()).then(updateStats).catch(console.error);
+
         if (data.capability_token) {
             const tokenBox = makeElement('div', 'resp-token-card');
             tokenBox.style.marginTop = '12px';
@@ -604,6 +607,7 @@ async function simulateCheckout() {
 
 async function dispatchTestPayment(token, amount) {
     const response = document.getElementById('checkout-response');
+    const statusBadge = document.getElementById('checkout-status');
     const loadingP = document.createElement('p');
     loadingP.innerHTML = '<em>Dispatching payment to Razorpay gateway with idempotency key…</em>';
     response.append(loadingP);
@@ -619,6 +623,10 @@ async function dispatchTestPayment(token, amount) {
             }),
         });
         const data = await resp.json();
+        if (statusBadge) {
+            statusBadge.textContent = data.success ? 'Payment Settled' : 'Payment Failed';
+            statusBadge.className = data.success ? 'badge badge-pass' : 'badge badge-reject';
+        }
         setCheckoutResponse([
             { label: 'Payment Status', value: data.status || (data.success ? 'CAPTURED' : 'FAILED') },
             { label: 'Razorpay Order ID', value: data.razorpay_order_id || 'simulated_order_' + Math.random().toString(36).substring(2, 9) },
@@ -630,7 +638,7 @@ async function dispatchTestPayment(token, amount) {
         setTimeout(() => {
             refreshTrail();
             apiFetch('/audit/stats').then(r => r.json()).then(updateStats).catch(console.error);
-        }, 300);
+        }, 200);
     } catch (e) {
         setCheckoutResponse([{ label: 'Dispatch failed', value: e.message }], 'reject');
     }
