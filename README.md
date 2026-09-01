@@ -440,7 +440,6 @@ For evaluators, judges, and reviewers accessing the live deployed dashboard:
 * **Virtualized Audit Trail**: 48px row virtualization rendering smooth 120fps scrolling across 1,000+ continuous events.
 * **Interactive Checkout Simulator**: 4 one-click test chips (`⚡ Pass`, `⚡ Multi-Qty`, `⚡ Reject`, `⚡ Multi-Item`) for instant evaluation.
 * **Monte Carlo Campaign Analytics**: Empirical 95% Confidence Intervals, Standard Deviation ($\sigma$), and Basket Lift tracking.
-* **Drafting Coordinate Telemetry**: Real-time cursor grid alignment (`COORD: X[####] Y[####] | 1:1`) for structural inspection.
 
 ---
 
