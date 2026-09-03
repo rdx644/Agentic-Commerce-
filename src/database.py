@@ -114,7 +114,6 @@ CREATE TABLE IF NOT EXISTS webhook_events (
     processed_at        TIMESTAMP,
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX IF NOT EXISTS idx_webhook_status ON webhook_events(processing_status);
 
 -- Dead letter queue (failed reconciliation after N attempts)
 CREATE TABLE IF NOT EXISTS dead_letter_queue (
@@ -233,6 +232,60 @@ def _get_sqlite_connection() -> SQLiteConnWrapper:
     return SQLiteConnWrapper(_local.conn)
 
 
+def _run_postgres_migrations(conn) -> None:
+    """Run idempotent forward migrations on existing PostgreSQL tables."""
+    migration_statements = [
+        "ALTER TABLE webhook_events ADD COLUMN IF NOT EXISTS processing_status TEXT NOT NULL DEFAULT 'RECEIVED'",
+        "ALTER TABLE webhook_events ADD COLUMN IF NOT EXISTS processing_attempts INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE webhook_events ADD COLUMN IF NOT EXISTS last_error TEXT",
+        "ALTER TABLE payment_records ADD COLUMN IF NOT EXISTS capability_token_id TEXT",
+        "ALTER TABLE payment_records ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE payment_records ADD COLUMN IF NOT EXISTS last_error TEXT",
+        "ALTER TABLE capability_tokens ADD COLUMN IF NOT EXISTS allowed_item_ids TEXT",
+        "CREATE INDEX IF NOT EXISTS idx_webhook_status ON webhook_events(processing_status)",
+    ]
+    with conn.cursor() as cur:
+        for stmt in migration_statements:
+            try:
+                cur.execute(stmt)
+            except Exception as e:
+                logger.warning("Benign migration statement skipped: %s (reason: %s)", stmt, e)
+
+
+def _run_sqlite_migrations(conn) -> None:
+    """Run idempotent forward migrations on existing SQLite tables."""
+    try:
+        raw_conn = conn._conn if hasattr(conn, "_conn") else conn
+        cursor = raw_conn.cursor()
+
+        cursor.execute("PRAGMA table_info(webhook_events)")
+        existing_wh = {row[1] for row in cursor.fetchall()}
+        if "processing_status" not in existing_wh:
+            cursor.execute("ALTER TABLE webhook_events ADD COLUMN processing_status TEXT NOT NULL DEFAULT 'RECEIVED'")
+        if "processing_attempts" not in existing_wh:
+            cursor.execute("ALTER TABLE webhook_events ADD COLUMN processing_attempts INTEGER NOT NULL DEFAULT 0")
+        if "last_error" not in existing_wh:
+            cursor.execute("ALTER TABLE webhook_events ADD COLUMN last_error TEXT")
+
+        cursor.execute("PRAGMA table_info(payment_records)")
+        existing_pr = {row[1] for row in cursor.fetchall()}
+        if "capability_token_id" not in existing_pr:
+            cursor.execute("ALTER TABLE payment_records ADD COLUMN capability_token_id TEXT")
+        if "attempts" not in existing_pr:
+            cursor.execute("ALTER TABLE payment_records ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0")
+        if "last_error" not in existing_pr:
+            cursor.execute("ALTER TABLE payment_records ADD COLUMN last_error TEXT")
+
+        cursor.execute("PRAGMA table_info(capability_tokens)")
+        existing_ct = {row[1] for row in cursor.fetchall()}
+        if "allowed_item_ids" not in existing_ct:
+            cursor.execute("ALTER TABLE capability_tokens ADD COLUMN allowed_item_ids TEXT")
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_webhook_status ON webhook_events(processing_status)")
+    except Exception as e:
+        logger.warning("Benign SQLite migration skipped: %s", e)
+
+
 # ── Initialization ────────────────────────────────────────────────────────────
 
 def init_db(max_retries: int = 3, retry_delay: float = 0.5) -> None:
@@ -254,6 +307,7 @@ def init_db(max_retries: int = 3, retry_delay: float = 0.5) -> None:
         with _sqlite_write_lock:
             conn = _get_sqlite_connection()
             conn._conn.executescript(SQLITE_SCHEMA_SQL)
+            _run_sqlite_migrations(conn)
         logger.info("SQLite Database initialized successfully at %s", _sqlite_path)
         return
 
@@ -277,6 +331,7 @@ def init_db(max_retries: int = 3, retry_delay: float = 0.5) -> None:
                 with _pool.connection(timeout=3.0) as conn:
                     with conn.cursor() as cur:
                         cur.execute(POSTGRES_SCHEMA_SQL)
+                    _run_postgres_migrations(conn)
                     conn.commit()
                 logger.info("PostgreSQL Database initialized successfully")
                 return
@@ -295,6 +350,7 @@ def init_db(max_retries: int = 3, retry_delay: float = 0.5) -> None:
             with _sqlite_write_lock:
                 conn = _get_sqlite_connection()
                 conn._conn.executescript(SQLITE_SCHEMA_SQL)
+                _run_sqlite_migrations(conn)
             return
 
         if last_err:
@@ -309,6 +365,7 @@ def init_db(max_retries: int = 3, retry_delay: float = 0.5) -> None:
         with _sqlite_write_lock:
             conn = _get_sqlite_connection()
             conn._conn.executescript(SQLITE_SCHEMA_SQL)
+            _run_sqlite_migrations(conn)
 
 
 def close_db() -> None:
