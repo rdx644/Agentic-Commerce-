@@ -29,6 +29,7 @@ os.environ.setdefault("RAZORPAY_WEBHOOK_SECRET", "dummy_webhook_secret_123456")
 os.environ.setdefault("GEMINI_API_KEY", "dummy_gemini_api_key_123456")
 os.environ.setdefault("LOG_LEVEL", "INFO")
 os.environ.setdefault("ALLOWED_HOSTS", "*")
+os.environ.setdefault("PAYMENT_SIMULATION_ENABLED", "true")
 
 from src.config import get_settings
 get_settings.cache_clear()

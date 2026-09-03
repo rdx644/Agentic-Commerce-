@@ -36,6 +36,8 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: PAYMENT_SIMULATION_ENABLED
+        value: "false"
 
 databases:
   - name: agentic-commerce-db

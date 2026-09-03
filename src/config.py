@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     operator_password: str = ""
 
     # ── Payment Simulation ────────────────────────────────────────────────
-    payment_simulation_enabled: bool = True  # Must be False in production
+    payment_simulation_enabled: bool = False  # Must be False in production
 
     # ── Database ──────────────────────────────────────────────────────────
     database_url: str = "postgresql://postgres:postgres@localhost:5432/agentic_commerce"
