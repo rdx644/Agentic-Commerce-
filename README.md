@@ -490,8 +490,6 @@ For evaluators, judges, and reviewers accessing the live deployed dashboard:
 > 6. **Run Campaign**: Click **`🚀 RUN CAMPAIGN`** to trigger a 50-trial Monte Carlo A/B conversion simulation with real-time Chart.js visual telemetry.
 > 7. **Interactive Blueprint**: Visit **[https://agentic-commerce-zyoy.onrender.com/graph](https://agentic-commerce-zyoy.onrender.com/graph)** to inspect the force-directed D3 system topology.
 
-* **Live Dashboard URL**: **[https://agentic-commerce-zyoy.onrender.com/dashboard](https://agentic-commerce-zyoy.onrender.com/dashboard)**
-* **Live Architecture Graph**: **[https://agentic-commerce-zyoy.onrender.com/graph](https://agentic-commerce-zyoy.onrender.com/graph)**
 * **Dual-Mode Header**: Starts in `👁️ GUEST OBSERVER` mode for instant inspection; switches to `🛡️ OPERATOR` on login.
 * **Virtualized Audit Trail**: 48px row virtualization rendering smooth 120fps scrolling across 1,000+ continuous events.
 * **Interactive Checkout Simulator**: 4 one-click test chips (`⚡ Pass`, `⚡ Multi-Qty`, `⚡ Reject`, `⚡ Multi-Item`) for instant evaluation.
