@@ -57,7 +57,7 @@ An enterprise-grade, mathematically bounded, explainable **Agentic Checkout & Pa
 1. **Deterministic Separation of Concerns**: The LLM parses natural language intent into item IDs, quantities, and spending ceilings. All pricing and availability are resolved deterministically against an immutable catalog manifest.
 2. **Cryptographic Catalog Snapshotting**: Every quote is bound to a SHA-256 catalog snapshot hash. Price drift is calculated as an exact arithmetic fact rather than a heuristic guess.
 3. **Zero-Trust Capability Tokens**: Issues cryptographically signed HS256 JWT tokens with unique token IDs (`jti`), strict 5-minute TTL, server-determined merchant binding, item scope enforcement, and atomic single-use database consumption.
-4. **Authoritative Central Payment State Machine**: All payment-status transitions route through `transition_payment_state()`. Direct SQL `UPDATE payment_records SET status = ...` is strictly banned. Terminal states (`CAPTURED`, `FAILED`, `REFUNDED`, `DEAD_LETTER`) cannot regress.
+4. **Authoritative Central Payment State Machine**: All payment-status transitions route through `transition_payment_state()`. Direct SQL `UPDATE payment_records SET status = ...` is strictly banned. Terminal states (`CAPTURED`, `FAILED`, `DEAD_LETTER`) cannot regress.
 5. **Fail-Closed Webhook Pipeline & Recovery**: Webhooks verify HMAC-SHA256 signatures over raw request bytes and fail closed if monetary fields (`amount`, `currency`) are missing or mismatched. Features durably tracked and recoverable webhook events across service restarts (`POST /webhook/recover`).
 6. **Atomic Conditional Budget Ledger**: Single-statement conditional updates prevent double-spending, race conditions, and balance overruns across concurrent agent workers.
 7. **Zero-Sink Blueprint Telemetry**: High-contrast, cyanotype-inspired dashboard with virtualized DOM scrolling, self-hosted D3 v7 and Chart.js 4.4.0, with no known unsafe DOM sinks in audited frontend assets, and strict Content Security Policy (`script-src 'self'`).
@@ -236,7 +236,7 @@ For every campaign simulation run across baseline and agentic cohorts, $K$ indep
 | :--- | :--- | :--- |
 | **Mean Revenue Lift ($\bar{L}$)** | $\bar{L} = \frac{1}{K} \sum_{k=1}^{K} \text{Lift}_k$ | Average percentage uplift in merchant gross merchandise value across all simulation trials. |
 | **Standard Deviation ($\sigma$)** | $\sigma = \sqrt{\frac{1}{K-1} \sum_{k=1}^{K} (\text{Lift}_k - \bar{L})^2}$ | Measures trial-to-trial variance and distribution stability under stochastic demand. |
-| **95% Confidence Interval** | $\left[ \bar{L} - 1.96 \cdot \frac{\sigma}{\sqrt{K}}, \bar{L} + 1.96 \cdot \frac{\sigma}{\sqrt{K}} \right]$ | Statistically guaranteed margin of error at a 95% confidence level ($p < 0.05$). |
+| **95% Confidence Interval** | $\left[ \bar{L} - 1.96 \cdot \frac{\sigma}{\sqrt{K}}, \bar{L} + 1.96 \cdot \frac{\sigma}{\sqrt{K}} \right]$ | Estimated under the simulation assumptions at a 95% confidence level ($p < 0.05$). |
 | **Sample Size ($N$)** | $N = \text{Total Evaluated Sessions}$ | Total volume of independent purchasing journeys analyzed in the run (capped at $N \le 200$). |
 
 ---
@@ -248,7 +248,7 @@ For every campaign simulation run across baseline and agentic cohorts, $K$ indep
 | **Runtime & Framework** | **Python 3.11+ / FastAPI** | High-performance asynchronous ASGI framework with automated OpenAPI schemas, native Pydantic v2 validation, and low-latency request handling. |
 | **AI / Intent Engine** | **Google Gemini 2.0 Flash** | Fast structured JSON output generation, bounded inputs (1,000 chars), accompanied by a resilient multi-model fallback chain and heuristic matching. |
 | **Database & Pool** | **PostgreSQL 16 Alpine + psycopg_pool** | PostgreSQL required in production; SQLite is development/test only. Full ACID compliance, connection multiplexing, and idempotent forward schema migrations. |
-| **Payment Gateway** | **Razorpay Orders & Webhooks** | Production payment gateway integration with HMAC-SHA256 signature verification, central state machine gating, and fail-closed monetary validation. |
+| **Payment Gateway** | **Razorpay Orders & Webhooks** | Razorpay test-mode payment integration with HMAC-SHA256 signature verification, central state machine gating, and fail-closed monetary validation. |
 | **Security & Auth** | **PyJWT + Bearer Auth + Rate Limiting** | Cryptographically signed HS256 capability tokens with tight TTLs (5 min), combined with OAuth2-style password authentication issuing HS256-signed bearer JWTs, single-use 30s SSE tickets, and in-memory sliding-window rate limiting for the single-instance deployment. |
 | **Frontend UI** | **Vanilla CSS + Safe Virtual DOM Table** | High-contrast Architectural Blueprint (Cyanotype) layout. 48px row virtualization, local Chart.js 4.4.0, local D3.js v7, and zero innerHTML sinks. |
 | **Containerization** | **Docker & Docker Compose** | Multi-stage slim container builds running under a dedicated non-root `agent` user (UID 1000) with health checks. |
@@ -387,7 +387,7 @@ chmod +x scripts/deploy.sh
 
 ## 🔒 Security & Production Hardening
 
-* **Central Payment State Machine**: All payment-status transitions route through `transition_payment_state()`. Zero direct SQL `UPDATE payment_records SET status = ...` exist repository-wide. Terminal states (`CAPTURED`, `FAILED`, `REFUNDED`, `DEAD_LETTER`) cannot regress.
+* **Central Payment State Machine**: All payment-status transitions route through `transition_payment_state()`. Zero direct SQL `UPDATE payment_records SET status = ...` exist repository-wide. Terminal states (`CAPTURED`, `FAILED`, `DEAD_LETTER`) cannot regress.
 * **Server-Determined Merchant Binding**: Payment dispatch validates `token_payload.merchant_id == trusted_merchant_id` and strictly verifies item IDs against `token_payload.allowed_item_ids`.
 * **Fail-Closed Webhook Validation & Recovery**: Missing or mismatched `amount` or `currency` immediately fails closed with `WEBHOOK_MISMATCH` audit logging. Webhooks are durably tracked and recoverable webhook events (`processing_status`) across service restarts.
 * **Database Architecture**: PostgreSQL required in production; SQLite is development/test only. In `APP_ENV=production`, SQLite fallback is strictly blocked via Pydantic validators and startup `RuntimeError`.
