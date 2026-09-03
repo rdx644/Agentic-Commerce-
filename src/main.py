@@ -252,6 +252,7 @@ async def api_index():
             "audit_stats": "/audit/stats",
             "audit_stream": "/audit/stream",
             "dashboard": "/dashboard",
+            "architecture_graph": "/graph",
             "docs": "/docs",
         },
     }
@@ -299,3 +300,16 @@ async def dashboard():
     if os.path.exists(dashboard_path):
         return FileResponse(dashboard_path)
     return {"error": "Dashboard not found", "path": dashboard_path}
+
+
+@app.get("/architecture-graph")
+@app.get("/graph")
+async def architecture_graph_view():
+    """Serve the interactive architecture graph blueprint."""
+    graph_path = os.path.join(dashboard_dir, "architecture_graph.html")
+    if not os.path.exists(graph_path):
+        graph_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "architecture_graph.html")
+    if os.path.exists(graph_path):
+        return FileResponse(graph_path)
+    return {"error": "Architecture graph not found", "path": graph_path}
+
