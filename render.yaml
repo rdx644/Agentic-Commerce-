@@ -6,6 +6,7 @@ services:
     plan: free
     region: oregon
     branch: main
+    autoDeploy: true
     healthCheckPath: /health
     envVars:
       - key: APP_ENV
