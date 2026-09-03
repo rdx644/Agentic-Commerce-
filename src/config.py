@@ -29,8 +29,11 @@ class Settings(BaseSettings):
     app_env: str = "development"
     jwt_secret: str = "change-me-in-production"
     capability_token_ttl_seconds: int = 300  # 5 minutes
-    operator_username: str = "Razorpay"
-    operator_password: str = "RazorPay@123456#"
+    operator_username: str = ""
+    operator_password: str = ""
+
+    # ── Payment Simulation ────────────────────────────────────────────────
+    payment_simulation_enabled: bool = True  # Must be False in production
 
     # ── Database ──────────────────────────────────────────────────────────
     database_url: str = "postgresql://postgres:postgres@localhost:5432/agentic_commerce"
@@ -66,17 +69,41 @@ class Settings(BaseSettings):
         if self.app_env.lower() not in ("production", "prod"):
             return self
 
+        # ── Operator credentials must be explicitly set ───────────────────
+        if not self.operator_username:
+            raise ValueError("OPERATOR_USERNAME must be configured in production")
+        if not self.operator_password:
+            raise ValueError("OPERATOR_PASSWORD must be configured in production")
+        if len(self.operator_password) < 16:
+            raise ValueError("OPERATOR_PASSWORD must be at least 16 characters in production")
+
+        # ── JWT secret must be strong ─────────────────────────────────────
         if self.jwt_secret == "change-me-in-production" or len(self.jwt_secret) < 32:
             raise ValueError("JWT_SECRET must be a unique value of at least 32 characters in production")
+
+        # ── Razorpay keys required ────────────────────────────────────────
         if not self.razorpay_key_secret:
             raise ValueError("RAZORPAY_KEY_SECRET must be configured in production")
         if not self.razorpay_webhook_secret:
             raise ValueError("RAZORPAY_WEBHOOK_SECRET must be configured in production")
-        if len(self.operator_password) < 16:
-            raise ValueError("OPERATOR_PASSWORD must be at least 16 characters in production")
+
+        # ── Payment simulation must be disabled ───────────────────────────
+        if self.payment_simulation_enabled:
+            raise ValueError("PAYMENT_SIMULATION_ENABLED must be false in production")
+
+        # ── PostgreSQL required in production ─────────────────────────────
+        if self.database_url.startswith("sqlite"):
+            raise ValueError("DATABASE_URL must be PostgreSQL in production (SQLite not permitted)")
+
+        # ── Debug logging disallowed ──────────────────────────────────────
         if self.log_level.upper() == "DEBUG":
             raise ValueError("LOG_LEVEL must not be DEBUG in production")
+
         return self
+
+    @property
+    def is_production(self) -> bool:
+        return self.app_env.lower() in ("production", "prod")
 
     @property
     def allowed_hosts_list(self) -> list[str]:

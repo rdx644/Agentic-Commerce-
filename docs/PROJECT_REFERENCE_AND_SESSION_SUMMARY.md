@@ -123,11 +123,11 @@ The frontend is designed around a **Cyanotype Architectural Blueprint** theme:
 
 ## 6. Operator Demo Credentials & Access
 
-| Field | Production Demo Credential |
+| Field | Production Access Configuration |
 | :--- | :--- |
 | **Live URL** | [https://agentic-commerce-zyoy.onrender.com/dashboard](https://agentic-commerce-zyoy.onrender.com/dashboard) |
-| **Username** | `Razorpay` |
-| **Password** | `RazorPay@123456#` |
+| **Username** | Configured via `OPERATOR_USERNAME` (default: `Razorpay`) |
+| **Password** | Configured securely via deployment `OPERATOR_PASSWORD` environment variable |
 
 ---
 

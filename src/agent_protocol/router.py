@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 import uuid
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from fastapi import APIRouter, HTTPException, status
 
 from src.catalog import service as catalog_service
@@ -32,28 +32,36 @@ router = APIRouter(tags=["Agent Protocol"])
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
 class AgentItemRequest(BaseModel):
-    item_id: str
-    quantity: int = Field(default=1, ge=1, le=100)
+    model_config = ConfigDict(extra="forbid")
+
+    item_id: str = Field(..., min_length=1, max_length=64, description="Catalog item identifier")
+    quantity: int = Field(default=1, ge=1, le=100, description="Quantity bounded to 1-100 units")
 
 
 class AgentCheckoutRequest(BaseModel):
-    session_id: Optional[str] = None
-    items: List[AgentItemRequest]
-    max_budget_paise: int = Field(description="Strict spending ceiling in paise (₹1 = 100 paise)")
-    catalog_hash: Optional[str] = None
-    agent_identity: Optional[str] = "autonomous_ai_buyer"
+    model_config = ConfigDict(extra="forbid")
+
+    session_id: Optional[str] = Field(None, max_length=128)
+    items: List[AgentItemRequest] = Field(..., min_length=1, max_length=50, description="List of items (1-50)")
+    max_budget_paise: int = Field(..., gt=0, le=1_000_000_000, description="Strict spending ceiling in paise (₹1 = 100 paise)")
+    catalog_hash: Optional[str] = Field(None, max_length=128)
+    agent_identity: Optional[str] = Field("autonomous_ai_buyer", max_length=128)
 
 
 class AgentAuthorizeRequest(BaseModel):
-    session_id: str
-    items: List[AgentItemRequest]
-    max_budget_paise: int
+    model_config = ConfigDict(extra="forbid")
+
+    session_id: str = Field(..., min_length=1, max_length=128)
+    items: List[AgentItemRequest] = Field(..., min_length=1, max_length=50)
+    max_budget_paise: int = Field(..., gt=0, le=1_000_000_000)
 
 
 class AgentPaymentRequest(BaseModel):
-    session_id: str
-    capability_token: str
-    amount_paise: int
+    model_config = ConfigDict(extra="forbid")
+
+    session_id: str = Field(..., min_length=1, max_length=128)
+    capability_token: str = Field(..., min_length=16, description="Cryptographic single-use capability token")
+    amount_paise: int = Field(..., gt=0, le=1_000_000_000)
 
 
 # ── Discovery Endpoints ───────────────────────────────────────────────────────

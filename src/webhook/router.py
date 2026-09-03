@@ -4,7 +4,6 @@ Webhook API routes.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import re
 
@@ -76,15 +75,10 @@ async def receive_webhook(request: Request):
         logger.info("Duplicate webhook event atomically discarded: %s", event_id)
         return {"status": "duplicate", "event_id": event_id}
 
-    # ── Ack fast, process async ───────────────────────────────────────────
-    asyncio.create_task(_process_in_background(event_id, event_type, payload))
-
-    return {"status": "accepted", "event_id": event_id}
-
-
-async def _process_in_background(event_id: str, event_type: str, payload: dict):
-    """Background processing of webhook event."""
+    # ── Process synchronously for durability (no fire-and-forget) ────────
     try:
-        webhook_handler.process_webhook_event(event_id, event_type, payload)
+        result = webhook_handler.process_webhook_event(event_id, event_type, payload)
+        return {"status": "processed", "event_id": event_id, "action": result.get("action", "none")}
     except Exception as e:
-        logger.error("Background webhook processing failed: event=%s, error=%s", event_id, e)
+        logger.error("Webhook processing failed: event=%s, error=%s", event_id, e)
+        return {"status": "processing_error", "event_id": event_id}

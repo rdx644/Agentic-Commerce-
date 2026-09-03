@@ -13,8 +13,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
         rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="/dashboard/static/styles.css?v=2.3.0">
+    <script src="/dashboard/static/chart.min.js?v=4.4.0"></script>
 </head>
 
 <body>
@@ -257,16 +257,10 @@
             <div class="modal-body">
                 <div class="demo-cred-hint"
                     style="background: rgba(0, 255, 255, 0.08); border: 1px dashed var(--measure-cyan); padding: 10px; margin-bottom: 16px; font-size: 11px;">
-                    <div style="color: var(--measure-cyan); font-weight: 700; margin-bottom: 4px;">⚡ HACKATHON DEMO
-                        OPERATOR CREDENTIALS:</div>
-                    <div style="color: rgba(255,255,255,0.8); font-size: 11px;">Username: <code
-                            style="color: #fff; background: rgba(0,0,0,0.4); padding: 2px 4px;">Razorpay</code>
-                        &nbsp;|&nbsp; Password: <code
-                            style="color: #fff; background: rgba(0,0,0,0.4); padding: 2px 4px;">RazorPay@123456#</code>
+                    <div style="color: var(--measure-cyan); font-weight: 700; margin-bottom: 4px;">⚡ OPERATOR AUTHENTICATION:</div>
+                    <div style="color: rgba(255,255,255,0.8); font-size: 11px; line-height: 1.5;">
+                        Credentials are configured strictly via server environment variables (<code>OPERATOR_USERNAME</code> / <code>OPERATOR_PASSWORD</code>). Enter your deployment credentials below.
                     </div>
-                    <button type="button" id="autofill-demo-btn"
-                        style="margin-top: 8px; width: 100%; font-size: 11px; padding: 6px; background: rgba(0,255,255,0.15); border: 1px solid var(--measure-cyan); color: var(--measure-cyan); cursor: pointer; text-transform: uppercase; font-family: var(--font-mono); font-weight: 600;">⚡
-                        1-Click Autofill Credentials</button>
                 </div>
                 <form id="login-form">
                     <div class="input-group" style="margin-bottom: 1rem;">

@@ -45,8 +45,8 @@ CREATE TABLE IF NOT EXISTS catalog_versions (
 CREATE TABLE IF NOT EXISTS budget_ledger (
     session_id              TEXT PRIMARY KEY,
     agent_id                TEXT,
-    budget_paise            INTEGER NOT NULL,
-    spent_paise             INTEGER NOT NULL DEFAULT 0,
+    budget_paise            INTEGER NOT NULL CHECK (budget_paise > 0),
+    spent_paise             INTEGER NOT NULL DEFAULT 0 CHECK (spent_paise >= 0),
     consecutive_rejections  INTEGER NOT NULL DEFAULT 0,
     frozen                  INTEGER NOT NULL DEFAULT 0,
     created_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -79,22 +79,39 @@ CREATE TABLE IF NOT EXISTS payment_records (
     idempotency_key     TEXT NOT NULL UNIQUE,
     razorpay_order_id   TEXT,
     razorpay_payment_id TEXT,
-    amount_paise        INTEGER NOT NULL,
+    amount_paise        INTEGER NOT NULL CHECK (amount_paise > 0),
     currency            TEXT NOT NULL DEFAULT 'INR',
     status              TEXT NOT NULL DEFAULT 'PENDING',
+    capability_token_id TEXT,
     attempts            INTEGER NOT NULL DEFAULT 0,
     last_error          TEXT,
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Webhook event deduplication
+-- Capability tokens (persistent single-use authorization)
+CREATE TABLE IF NOT EXISTS capability_tokens (
+    token_id                TEXT PRIMARY KEY,
+    session_id              TEXT NOT NULL,
+    merchant_id             TEXT NOT NULL,
+    authorized_amount_paise INTEGER NOT NULL CHECK (authorized_amount_paise > 0),
+    allowed_item_ids        TEXT,
+    issued_at               TIMESTAMP NOT NULL,
+    expires_at              TIMESTAMP NOT NULL,
+    consumed_at             TIMESTAMP,
+    created_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Webhook event deduplication (with processing state for durability)
 CREATE TABLE IF NOT EXISTS webhook_events (
-    event_id     TEXT PRIMARY KEY,
-    event_type   TEXT NOT NULL,
-    payload_json TEXT NOT NULL,
-    processed    INTEGER NOT NULL DEFAULT 0,
-    created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    event_id            TEXT PRIMARY KEY,
+    event_type          TEXT NOT NULL,
+    payload_json        TEXT NOT NULL,
+    processed           INTEGER NOT NULL DEFAULT 0,
+    processing_attempts INTEGER NOT NULL DEFAULT 0,
+    last_error          TEXT,
+    processed_at        TIMESTAMP,
+    created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Dead letter queue (failed reconciliation after N attempts)
@@ -135,6 +152,8 @@ CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
 CREATE INDEX IF NOT EXISTS idx_payment_session ON payment_records(session_id);
 CREATE INDEX IF NOT EXISTS idx_payment_status ON payment_records(status);
 CREATE INDEX IF NOT EXISTS idx_campaign_id ON campaign_sessions(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_capability_session ON capability_tokens(session_id);
+CREATE INDEX IF NOT EXISTS idx_capability_expiry ON capability_tokens(expires_at);
 """
 
 SQLITE_SCHEMA_SQL = POSTGRES_SCHEMA_SQL.replace("SERIAL PRIMARY KEY", "INTEGER PRIMARY KEY AUTOINCREMENT")
@@ -305,13 +324,13 @@ def close_db() -> None:
 def get_db() -> Generator[Any, None, None]:
     """Context manager for database connections."""
     global _pool, _is_sqlite
+    if not _pool and not _is_sqlite:
+        init_db()
+
     if _is_sqlite:
         with _sqlite_write_lock:
             yield _get_sqlite_connection()
         return
-
-    if not _pool:
-        init_db()
 
     with _pool.connection() as conn:
         yield conn
@@ -321,14 +340,14 @@ def get_db() -> Generator[Any, None, None]:
 def get_db_transaction() -> Generator[Any, None, None]:
     """Context manager for write transactions."""
     global _pool, _is_sqlite
+    if not _pool and not _is_sqlite:
+        init_db()
+
     if _is_sqlite:
         conn = _get_sqlite_connection()
         with conn.transaction():
             yield conn
         return
-
-    if not _pool:
-        init_db()
 
     with _pool.connection() as conn:
         try:

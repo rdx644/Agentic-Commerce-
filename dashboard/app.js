@@ -511,7 +511,9 @@ async function runCampaign() {
 
     const btn = document.getElementById('run-campaign');
     btn.disabled = true;
-    btn.innerHTML = '<span class="btn-spinner"></span> RUNNING CAMPAIGN…';
+    const btnSpinner = document.createElement('span');
+    btnSpinner.className = 'btn-spinner';
+    btn.replaceChildren(btnSpinner, document.createTextNode(' RUNNING CAMPAIGN…'));
 
     try {
         const resp = await apiFetch('/campaign/run', {
@@ -535,7 +537,7 @@ async function runCampaign() {
         showToast(`Campaign run failed: ${e.message}`, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = 'RUN CAMPAIGN';
+        btn.textContent = 'RUN CAMPAIGN';
     }
 }
 
@@ -570,7 +572,9 @@ async function simulateCheckout() {
     const statusBadge = document.getElementById('checkout-status');
     
     trigger.disabled = true;
-    trigger.innerHTML = '<span class="btn-spinner"></span> Checking guardrails…';
+    const triggerSpinner = document.createElement('span');
+    triggerSpinner.className = 'btn-spinner';
+    trigger.replaceChildren(triggerSpinner, document.createTextNode(' Checking guardrails…'));
     if (statusBadge) {
         statusBadge.textContent = 'Evaluating Intent';
         statusBadge.className = 'badge';
@@ -636,7 +640,7 @@ async function simulateCheckout() {
         setCheckoutResponse([{ label: 'Request failed', value: e.message }], 'reject');
     } finally {
         trigger.disabled = false;
-        trigger.innerHTML = 'Send request';
+        trigger.textContent = 'Send request';
     }
 }
 
@@ -644,7 +648,9 @@ async function dispatchTestPayment(token, amount) {
     const response = document.getElementById('checkout-response');
     const statusBadge = document.getElementById('checkout-status');
     const loadingP = document.createElement('p');
-    loadingP.innerHTML = '<em>Dispatching payment to Razorpay gateway with idempotency key…</em>';
+    const loadingEm = document.createElement('em');
+    loadingEm.textContent = 'Dispatching payment to Razorpay gateway with idempotency key…';
+    loadingP.append(loadingEm);
     response.append(loadingP);
 
     try {
@@ -690,14 +696,18 @@ async function openSessionDetail(sessionId) {
     // Skeleton Pulse for lazy-load instant visual feedback
     const skeleton = document.createElement('div');
     skeleton.className = 'modal-skeleton';
-    skeleton.innerHTML = `
-        <h3 class="session-title" style="color: var(--measure-cyan); margin-bottom: 8px;">SESSION PROVENANCE: ${sessionId}</h3>
-        <p style="color: rgba(255,255,255,0.6); font-size: 11px; margin-bottom: 16px;">Querying immutable cryptographic audit ledger...</p>
-        <div class="skeleton-pulse" style="width: 90%;"></div>
-        <div class="skeleton-pulse" style="width: 70%;"></div>
-        <div class="skeleton-pulse" style="width: 80%;"></div>
-        <div class="skeleton-pulse" style="width: 50%;"></div>
-    `;
+    const title = makeElement('h3', 'session-title', `SESSION PROVENANCE: ${sessionId}`);
+    title.style.color = 'var(--measure-cyan)';
+    title.style.marginBottom = '8px';
+    const subtitle = makeElement('p', '', 'Querying immutable cryptographic audit ledger...');
+    subtitle.style.color = 'rgba(255,255,255,0.6)';
+    subtitle.style.fontSize = '11px';
+    subtitle.style.marginBottom = '16px';
+    const p1 = document.createElement('div'); p1.className = 'skeleton-pulse'; p1.style.width = '90%';
+    const p2 = document.createElement('div'); p2.className = 'skeleton-pulse'; p2.style.width = '70%';
+    const p3 = document.createElement('div'); p3.className = 'skeleton-pulse'; p3.style.width = '80%';
+    const p4 = document.createElement('div'); p4.className = 'skeleton-pulse'; p4.style.width = '50%';
+    skeleton.append(title, subtitle, p1, p2, p3, p4);
     body.replaceChildren(skeleton);
 
     try {
@@ -710,13 +720,21 @@ async function openSessionDetail(sessionId) {
     } catch (e) {
         const errContainer = document.createElement('div');
         errContainer.className = 'modal-error-box';
-        errContainer.innerHTML = `
-            <p class="modal-message is-error" style="color: #ff3344; margin-bottom: 12px;">Failed to load session detail: ${e.message}</p>
-            <div style="display: flex; gap: 8px; margin-top: 10px;">
-                <button class="btn btn-primary" type="button" id="retry-session-btn">⚡ Retry</button>
-                <button class="btn" type="button" id="open-login-btn">🔑 Operator Login</button>
-            </div>
-        `;
+        const errMsg = makeElement('p', 'modal-message is-error', `Failed to load session detail: ${e.message}`);
+        errMsg.style.color = '#ff3344';
+        errMsg.style.marginBottom = '12px';
+        const btnGroup = document.createElement('div');
+        btnGroup.style.display = 'flex';
+        btnGroup.style.gap = '8px';
+        btnGroup.style.marginTop = '10px';
+        const retryBtn = makeElement('button', 'btn btn-primary', '⚡ Retry');
+        retryBtn.type = 'button';
+        retryBtn.id = 'retry-session-btn';
+        const loginBtn = makeElement('button', 'btn', '🔑 Operator Login');
+        loginBtn.type = 'button';
+        loginBtn.id = 'open-login-btn';
+        btnGroup.append(retryBtn, loginBtn);
+        errContainer.append(errMsg, btnGroup);
         body.replaceChildren(errContainer);
         document.getElementById('retry-session-btn')?.addEventListener('click', () => openSessionDetail(sessionId));
         document.getElementById('open-login-btn')?.addEventListener('click', () => document.getElementById('login-modal').classList.add('open'));
@@ -778,7 +796,9 @@ function updateAuthUI() {
         }
         if (opBar) opBar.classList.add('active');
         if (opIndicator) {
-            opIndicator.innerHTML = '<strong style="color: #00FF9D;">🛡️ OPERATOR AUTHENTICATED: RAZORPAY</strong> &nbsp;|&nbsp; Full Administrative, Reconciliation & Monte Carlo Privileges';
+            const strong = makeElement('strong', '', '🛡️ OPERATOR AUTHENTICATED: RAZORPAY');
+            strong.style.color = '#00FF9D';
+            opIndicator.replaceChildren(strong, document.createTextNode('  |  Full Administrative, Reconciliation & Monte Carlo Privileges'));
         }
     } else {
         if (badge) {
@@ -901,13 +921,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    document.getElementById('autofill-demo-btn')?.addEventListener('click', () => {
-        const userEl = document.getElementById('login-username');
-        const passEl = document.getElementById('login-password');
-        if (userEl) userEl.value = 'Razorpay';
-        if (passEl) passEl.value = 'RazorPay@123456#';
-        showToast('Demo credentials autofilled.', 'info');
-    });
+
 
     document.getElementById('header-auth-btn')?.addEventListener('click', () => {
         if (authToken) {

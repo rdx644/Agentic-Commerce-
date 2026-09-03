@@ -7,7 +7,7 @@
 [![Razorpay](https://img.shields.io/badge/Razorpay-Payment%20Orchestration-0C2340?style=flat&logo=razorpay&logoColor=white)](https://razorpay.com)
 [![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com)
 [![Render](https://img.shields.io/badge/Render-Cloud%20Blueprint-46E3B7?style=flat&logo=render&logoColor=white)](https://render.com)
-[![Tests](https://img.shields.io/badge/Tests-55%2F55%20Passing-brightgreen?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
+[![Tests](https://img.shields.io/badge/Tests-87%2F88%20Passing-brightgreen?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 An enterprise-grade, mathematically bounded, explainable **Agentic Checkout & Payment Orchestration System** designed for AI agents, machine buyers, and conversational commerce. Built with zero-trust capability tokens, cryptographic catalog snapshotting, atomic conditional budget ledgers, dynamic upsell intelligence, protocol-native agent interfaces, and a real-time **Architectural Blueprint (Cyanotype)** audit dashboard.
@@ -63,9 +63,8 @@ To balance **zero-friction evaluator accessibility** with **strict enterprise le
 │   Session Deep Dive with full Cryptographic Provenance.                                │
 │ • Protected Actions: Clicking "RUN CAMPAIGN" prompts login modal with 1-click helper.  │
 └───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                            │
-                                 [🔑 1-Click Operator Login]
-                                 (Razorpay / RazorPay@123456#)
+                                  [🔑 Operator Login]
+                       (Configured via Server Environment)
                                             ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ 🛡️ AUTHENTICATED OPERATOR MODE                                                        |
@@ -359,27 +358,22 @@ chmod +x scripts/deploy.sh
 
 ## 🧪 Testing Suite
 
-The platform includes **56 automated test scenarios** covering concurrency stress, agent evaluation, API validation, checkout simulation, and end-to-end payment:
+The platform includes **88 automated test scenarios** (87 passing offline/mocked, 1 live Razorpay integration skipped when live API keys are not in environment) covering concurrency stress, agent evaluation, capability token lifecycles, catalog immutability, fail-closed webhooks, production config security, and end-to-end payment:
 
 ```bash
 pytest tests/ -v
 ```
 
 ```text
-tests/test_agent_evaluation.py ....................                      [ 35%]
-tests/test_agent_protocol.py ....                                        [ 42%]
-tests/test_api_validation.py .................                           [ 73%]
-tests/test_checkout_simulator.py ....                                    [ 80%]
-tests/test_concurrency.py ...                                            [ 85%]
-tests/test_e2e_checkout.py ...                                           [ 91%]
-tests/test_full_system_verification.py ....                              [ 98%]
-tests/test_razorpay_integration.py s                                     [100%]
-
-================== 55 passed, 1 skipped, 0 failures in 4.76s ==================
+================== 87 passed, 1 skipped, 0 failures in 7.75s ==================
 ```
 
 | Test Suite | Coverage & Scenarios |
 | :--- | :--- |
+| `test_security_config.py` | Production fail-closed environment validation, secret length & entropy enforcement, forbidden default credential auditing. |
+| `test_capability_tokens.py` | Single-use cryptographic capability tokens, DB persistence, atomic burning on payment, tamper protection, and idempotency reuse. |
+| `test_catalog_immutability.py` | Immutable catalog snapshots, deterministic SHA-256 integrity hashing, conflict rejection on price/item mutation. |
+| `test_submission_security.py` | Single payment boundary verification, webhook monetary consistency (amount/currency checks), payment state machine transition rules, CSP script-src verification, and zero-sink safe DOM validation. |
 | `test_concurrency.py` | 100-thread concurrent spend against fixed budget, ceiling authorization bounds, and 50-thread concurrent webhook deduplication. |
 | `test_checkout_simulator.py` | 4 preset chip journeys: single item, multi-quantity, budget exceeded rejection, and multi-item bundle parsing. |
 | `test_full_system_verification.py` | End-to-end asset delivery, CSP font verification, guest vs operator permission matrix, and idempotent settlement. |
@@ -427,13 +421,13 @@ python scripts/test_razorpay_live.py
 
 The Architectural Blueprint dashboard provides real-time visibility into autonomous transactions with zero-latency telemetry:
 
-### 🔑 Demo Login Credentials
+### 🔑 Operator Access & Credentials
 For evaluators, judges, and reviewers accessing the live deployed dashboard:
 
-| Field | Demo Value |
+| Field | Configuration |
 | :--- | :--- |
-| **Username** | `Razorpay` |
-| **Password** | `RazorPay@123456#` |
+| **Username** | Injected via `OPERATOR_USERNAME` environment variable (default: `Razorpay`) |
+| **Password** | Injected via `OPERATOR_PASSWORD` environment variable (configured securely in Render deployment) |
 
 * **Live Dashboard URL**: **[https://agentic-commerce-zyoy.onrender.com/dashboard](https://agentic-commerce-zyoy.onrender.com/dashboard)**
 * **Dual-Mode Header**: Starts in `👁️ GUEST OBSERVER` mode for instant inspection; switches to `🛡️ OPERATOR` on 1-click login.

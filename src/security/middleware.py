@@ -45,14 +45,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "camera=(), microphone=(), geolocation=(), payment=(self)"
         )
 
-        # Security headers with permissive font and stylesheet sources for dashboard blueprint
+        # Hardened CSP: No unsafe-inline in script-src, self-hosted Chart.js, object-src none
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "script-src 'self'; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "font-src 'self' https://fonts.gstatic.com data:; "
             "img-src 'self' data: https:; "
-            "connect-src 'self' https:; "
+            "connect-src 'self'; "
+            "object-src 'none'; "
             "base-uri 'self'; "
             "form-action 'self'; "
             "frame-ancestors 'none'"

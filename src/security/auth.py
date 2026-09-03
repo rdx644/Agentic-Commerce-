@@ -3,12 +3,20 @@
 Replaces HTTP Basic auth with OAuth2 (JWT) for enterprise-grade security.
 Customer checkout remains capability-token based.
 SSE streaming uses short-lived, single-use stream tickets (never raw JWT in URLs).
+
+Operator JWTs include:
+- iss (issuer): agentic-commerce-auth
+- aud (audience): agentic-commerce-operator
+- role: operator
+- jti: unique token identifier
+- sub: operator username
 """
 
 from __future__ import annotations
 
 import secrets
 import time
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -22,6 +30,10 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 _oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token", auto_error=False)
 
+# Operator JWT constants
+_AUTH_ISSUER = "agentic-commerce-auth"
+_AUTH_AUDIENCE = "agentic-commerce-operator"
+
 # In-memory single-use stream ticket cache: ticket_id -> expiry_epoch
 _stream_tickets: dict[str, float] = {}
 
@@ -29,8 +41,16 @@ _stream_tickets: dict[str, float] = {}
 def create_access_token(data: dict, expires_delta: timedelta) -> str:
     settings = get_settings()
     to_encode = data.copy()
+    if "role" not in to_encode:
+        to_encode["role"] = "operator"
     expire = datetime.now(timezone.utc) + expires_delta
-    to_encode.update({"exp": expire})
+    to_encode.update({
+        "exp": expire,
+        "iss": _AUTH_ISSUER,
+        "aud": _AUTH_AUDIENCE,
+        "jti": str(uuid.uuid4()),
+        "iat": datetime.now(timezone.utc),
+    })
     encoded_jwt = jwt.encode(to_encode, settings.jwt_secret, algorithm="HS256")
     return encoded_jwt
 
@@ -56,17 +76,18 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
     access_token_expires = timedelta(hours=12)
     access_token = create_access_token(
-        data={"sub": form_data.username}, expires_delta=access_token_expires
+        data={"sub": form_data.username, "role": "operator"},
+        expires_delta=access_token_expires,
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 def require_operator(token: str = Depends(_oauth2_scheme)) -> str:
-    """Require a valid Bearer JWT token in the Authorization header."""
+    """Require a valid Bearer JWT token with operator role, issuer, and audience."""
     settings = get_settings()
 
     if settings.app_env != "production" and not settings.operator_password:
-        return settings.operator_username
+        return settings.operator_username or "dev_operator"
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -82,10 +103,32 @@ def require_operator(token: str = Depends(_oauth2_scheme)) -> str:
         )
 
     try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+        payload = jwt.decode(
+            token,
+            settings.jwt_secret,
+            algorithms=["HS256"],
+            issuer=_AUTH_ISSUER,
+            audience=_AUTH_AUDIENCE,
+        )
         username: str | None = payload.get("sub")
+        role: str | None = payload.get("role")
         if username is None:
             raise credentials_exception
+        if role != "operator":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient privileges: operator role required",
+            )
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except jwt.InvalidAudienceError:
+        raise credentials_exception
+    except jwt.InvalidIssuerError:
+        raise credentials_exception
     except jwt.InvalidTokenError:
         raise credentials_exception
 
@@ -131,9 +174,16 @@ def require_operator_optional(
     if token:
         try:
             settings = get_settings()
-            payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+            payload = jwt.decode(
+                token,
+                settings.jwt_secret,
+                algorithms=["HS256"],
+                issuer=_AUTH_ISSUER,
+                audience=_AUTH_AUDIENCE,
+            )
             username = payload.get("sub")
-            if username:
+            role = payload.get("role")
+            if username and role == "operator":
                 return username
         except jwt.InvalidTokenError:
             pass
@@ -153,7 +203,13 @@ def require_operator_or_ticket(
     if token:
         try:
             settings = get_settings()
-            payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+            payload = jwt.decode(
+                token,
+                settings.jwt_secret,
+                algorithms=["HS256"],
+                issuer=_AUTH_ISSUER,
+                audience=_AUTH_AUDIENCE,
+            )
             username = payload.get("sub")
             if username:
                 return username

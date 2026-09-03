@@ -22,7 +22,7 @@ from src.config import get_settings
 from src.database import get_db, get_db_transaction
 from src.guardrail.models import FailureClass
 from src.payment.models import PaymentDispatchRequest, PaymentDispatchResponse
-from src.security.tokens import verify_capability_token
+from src.security.tokens import verify_capability_token, consume_capability_token
 
 logger = logging.getLogger(__name__)
 
@@ -149,36 +149,64 @@ def dispatch_payment(request: PaymentDispatchRequest) -> PaymentDispatchResponse
     # ── Step 2: Generate idempotency key ──────────────────────────────────
     idempotency_key = _generate_idempotency_key(session_id, token_payload.token_id)
 
-    # ── Step 3: Write PENDING to our ledger BEFORE calling Razorpay ───────
+    # ── Step 3: Atomically consume the capability token (single-use) ──────
+    # First check: is this an idempotent retry of the same request?
+    with get_db() as conn:
+        existing = conn.execute(
+            "SELECT * FROM payment_records WHERE idempotency_key = %s",
+            (idempotency_key,),
+        ).fetchone()
+        if existing and existing["razorpay_order_id"]:
+            logger.info("Idempotent hit: returning existing order %s", existing["razorpay_order_id"])
+            return PaymentDispatchResponse(
+                session_id=session_id,
+                success=True,
+                razorpay_order_id=existing["razorpay_order_id"],
+                idempotency_key=idempotency_key,
+                amount_paise=request.amount_paise,
+                currency=request.currency,
+                status=existing["status"],
+                message="Idempotent: returning existing order.",
+                payment_record_id=existing["id"],
+            )
+
+    # Now consume — only proceeds if token has NOT been consumed yet
+    if not consume_capability_token(token_payload.token_id):
+        # Token is already consumed, expired, or nonexistent
+        # But was this our own idempotent retry? Check if we have a pending record
+        with get_db() as conn:
+            pending = conn.execute(
+                "SELECT * FROM payment_records WHERE idempotency_key = %s",
+                (idempotency_key,),
+            ).fetchone()
+        if pending:
+            # Same token, same session — this is a retry of a pending payment
+            logger.info("Capability already consumed but payment pending — allowing retry")
+        else:
+            _log_payment_action(
+                session_id, "PAYMENT_DISPATCH",
+                failure_class=FailureClass.TOKEN_INVALID,
+                reason="Capability token already consumed or expired (single-use enforcement)",
+                amount_paise=request.amount_paise,
+            )
+            return PaymentDispatchResponse(
+                session_id=session_id,
+                success=False,
+                status="REJECTED",
+                message="Capability token already consumed. Each authorization is single-use.",
+            )
+
+    # ── Step 4: Write PENDING to our ledger BEFORE calling Razorpay ───────
     with get_db_transaction() as conn:
         conn.execute(
             """
             INSERT INTO payment_records
-            (session_id, idempotency_key, amount_paise, currency, status)
-            VALUES (%s, %s, %s, %s, 'PENDING')
+            (session_id, idempotency_key, amount_paise, currency, status, capability_token_id)
+            VALUES (%s, %s, %s, %s, 'PENDING', %s)
             ON CONFLICT (idempotency_key) DO NOTHING
             """,
-            (session_id, idempotency_key, request.amount_paise, request.currency),
+            (session_id, idempotency_key, request.amount_paise, request.currency, token_payload.token_id),
         )
-
-    with get_db() as conn:
-        row = conn.execute(
-            "SELECT * FROM payment_records WHERE idempotency_key = %s",
-            (idempotency_key,),
-        ).fetchone()
-        if row and row["razorpay_order_id"]:
-            logger.info("Idempotent hit: returning existing order %s", row["razorpay_order_id"])
-            return PaymentDispatchResponse(
-                session_id=session_id,
-                success=True,
-                razorpay_order_id=row["razorpay_order_id"],
-                idempotency_key=idempotency_key,
-                amount_paise=request.amount_paise,
-                currency=request.currency,
-                status=row["status"],
-                message="Idempotent: returning existing order.",
-                payment_record_id=row["id"],
-            )
 
     # ── Step 4: Call Razorpay Orders API ──────────────────────────────────
     client = _get_razorpay_client()
@@ -257,9 +285,9 @@ def dispatch_payment(request: PaymentDispatchRequest) -> PaymentDispatchResponse
                 message="Idempotent: order already exists on Razorpay.",
             )
 
-        # In test mode or when using dummy credentials, simulate successful order
+        # Explicit simulation mode (must be disabled in production)
         settings = get_settings()
-        if settings.app_env == "test" or "dummy" in settings.razorpay_key_id:
+        if settings.payment_simulation_enabled:
             logger.info("Simulated test-mode order for dummy keys: %s", idempotency_key)
             sim_order_id = f"order_sim_{idempotency_key[:16]}"
             with get_db_transaction() as conn:

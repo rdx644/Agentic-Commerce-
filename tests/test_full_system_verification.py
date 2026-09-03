@@ -21,25 +21,12 @@ from src.catalog.service import seed_catalog
 @pytest.fixture(autouse=True)
 def setup_database():
     init_db()
-    items = [
-        CatalogItem(
-            item_id="phone_001",
-            name="Quantum X Pro Smartphone",
-            description="Flagship smartphone with AI camera",
-            price_paise=5999900,
-            category="smartphones",
-            tags=["electronics", "mobile"],
-        ),
-        CatalogItem(
-            item_id="phone_002",
-            name="NeoLite 5G Phone",
-            description="Mid-range 5G smartphone",
-            price_paise=1999900,
-            category="smartphones",
-            tags=["electronics", "mobile"],
-        ),
-    ]
-    seed_catalog(items, version="1.0.0")
+    from src.catalog import service as catalog_service
+    from src.main import _seed_default_catalog
+    try:
+        catalog_service.get_manifest()
+    except ValueError:
+        _seed_default_catalog()
 
 
 @pytest.fixture

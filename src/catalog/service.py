@@ -48,8 +48,9 @@ def _invalidate_cache() -> None:
 
 def seed_catalog(items: list[CatalogItem], version: str = "1.0.0") -> CatalogManifest:
     """
-    Seed or update the catalog with a new version.
-    Each version is an immutable snapshot stored in the DB.
+    Seed the catalog with a new version.
+    Each version is an IMMUTABLE snapshot — same version + different content is rejected.
+    Same version + same content is idempotent (safe).
     """
     catalog_hash = _compute_hash(items)
 
@@ -66,14 +67,28 @@ def seed_catalog(items: list[CatalogItem], version: str = "1.0.0") -> CatalogMan
     )
 
     with get_db_transaction() as conn:
+        # Immutable insert — DO NOTHING on conflict (never overwrite)
         conn.execute(
             """
             INSERT INTO catalog_versions (version, hash, items_json)
             VALUES (%s, %s, %s)
-            ON CONFLICT (version) DO UPDATE 
-            SET hash = EXCLUDED.hash, items_json = EXCLUDED.items_json
+            ON CONFLICT (version) DO NOTHING
             """,
             (version, catalog_hash, items_json),
+        )
+
+    # Verify: if version already existed, hashes must match
+    with get_db() as conn:
+        existing = conn.execute(
+            "SELECT hash FROM catalog_versions WHERE version = %s",
+            (version,),
+        ).fetchone()
+
+    if existing and existing["hash"] != catalog_hash:
+        raise ValueError(
+            f"Catalog version '{version}' already exists with a different hash. "
+            f"Existing: {existing['hash'][:16]}..., Requested: {catalog_hash[:16]}... "
+            f"Catalog versions are immutable — create a new version instead."
         )
 
     _invalidate_cache()
