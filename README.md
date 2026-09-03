@@ -7,13 +7,20 @@
 [![Razorpay](https://img.shields.io/badge/Razorpay-Payment%20Orchestration-0C2340?style=flat&logo=razorpay&logoColor=white)](https://razorpay.com)
 [![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com)
 [![Render](https://img.shields.io/badge/Render-Cloud%20Blueprint-46E3B7?style=flat&logo=render&logoColor=white)](https://render.com)
-[![Tests](https://img.shields.io/badge/Tests-93%20Passing%20(100%25)-brightgreen?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
+[![Tests](https://img.shields.io/badge/Tests-100%20Passing%20(100%25)-brightgreen?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 An enterprise-grade, mathematically bounded, explainable **Agentic Checkout & Payment Orchestration System** designed for AI agents, machine buyers, and conversational commerce. Built with zero-trust capability tokens, cryptographic catalog snapshotting, atomic conditional budget ledgers, dynamic upsell intelligence, protocol-native agent interfaces, central payment state machines, and a real-time **Architectural Blueprint (Cyanotype)** audit dashboard.
 
 > **Core Architectural Invariant**:  
 > *"Probabilistic AI decides what the buyer intends. Deterministic systems decide whether money may move."*
+
+### 🌐 Live Deployment & Interactive Endpoints
+* 🚀 **Live Audit Blueprint Dashboard**: **[https://agentic-commerce-zyoy.onrender.com/dashboard](https://agentic-commerce-zyoy.onrender.com/dashboard)**
+* 🕸️ **Interactive System Architecture Graph**: **[https://agentic-commerce-zyoy.onrender.com/graph](https://agentic-commerce-zyoy.onrender.com/graph)**
+* 📖 **Interactive OpenAPI Documentation**: **[https://agentic-commerce-zyoy.onrender.com/docs](https://agentic-commerce-zyoy.onrender.com/docs)**
+* 🤖 **Agent Protocol Discovery Manifest**: **[https://agentic-commerce-zyoy.onrender.com/.well-known/agent.json](https://agentic-commerce-zyoy.onrender.com/.well-known/agent.json)**
+* 🔑 **Evaluator Credentials**: `Razorpay` / `RazorPay@123456#`
 
 ---
 
@@ -401,12 +408,13 @@ pytest tests/ -q
 
 ```text
 ======================================================================
-93 passed, 1 skipped in 11.75s (100% PASS RATE)
+100 passed, 1 skipped in 15.74s (100% PASS RATE)
 ======================================================================
 ```
 
 | Test Suite | Scenarios & Verifications |
 | :--- | :--- |
+| `test_simulator_flows.py` | **7 tests**: End-to-end simulation of all 4 UI preset chips (single item, multi-quantity, budget-exceeded rejection, multi-item cart), operator auth & provenance inspection, 50-trial Monte Carlo execution, and ledger reconciliation. |
 | `test_submission_security.py` | **18 tests**: Single payment boundary verification, central state machine legal/illegal transitions, conflicting payment ID overwrite rejection, merchant binding rejection, item scope mismatch rejection, fail-closed webhook monetary consistency, durable webhook recovery, operator session privacy, production SQLite ban, rate limiting, and zero DOM sinks. |
 | `test_security_config.py` | Production fail-closed environment validation, secret length & entropy enforcement, forbidden default credential auditing. |
 | `test_capability_tokens.py` | Single-use cryptographic capability tokens, DB persistence, atomic burning on payment, tamper protection, and idempotency reuse. |
