@@ -17,7 +17,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application source code
 COPY src /app/src
 COPY dashboard /app/dashboard
-COPY architecture_graph.html /app/architecture_graph.html
 
 # Create non-root user for security
 RUN useradd -m -s /bin/bash agent && \
