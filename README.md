@@ -7,10 +7,13 @@
 [![Razorpay](https://img.shields.io/badge/Razorpay-Payment%20Orchestration-0C2340?style=flat&logo=razorpay&logoColor=white)](https://razorpay.com)
 [![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com)
 [![Render](https://img.shields.io/badge/Render-Cloud%20Blueprint-46E3B7?style=flat&logo=render&logoColor=white)](https://render.com)
-[![Tests](https://img.shields.io/badge/Tests-87%2F88%20Passing-brightgreen?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
+[![Tests](https://img.shields.io/badge/Tests-93%20Passing%20(100%25)-brightgreen?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-An enterprise-grade, mathematically bounded, explainable **Agentic Checkout & Payment Orchestration System** designed for AI agents, machine buyers, and conversational commerce. Built with zero-trust capability tokens, cryptographic catalog snapshotting, atomic conditional budget ledgers, dynamic upsell intelligence, protocol-native agent interfaces, and a real-time **Architectural Blueprint (Cyanotype)** audit dashboard.
+An enterprise-grade, mathematically bounded, explainable **Agentic Checkout & Payment Orchestration System** designed for AI agents, machine buyers, and conversational commerce. Built with zero-trust capability tokens, cryptographic catalog snapshotting, atomic conditional budget ledgers, dynamic upsell intelligence, protocol-native agent interfaces, central payment state machines, and a real-time **Architectural Blueprint (Cyanotype)** audit dashboard.
+
+> **Core Architectural Invariant**:  
+> *"Probabilistic AI decides what the buyer intends. Deterministic systems decide whether money may move."*
 
 ---
 
@@ -22,6 +25,7 @@ An enterprise-grade, mathematically bounded, explainable **Agentic Checkout & Pa
 - [System Architecture Flow](#-system-architecture-flow)
 - [Protocol-Native Agent Interface (AI Buyer)](#-protocol-native-agent-interface-ai-buyer)
 - [Interactive Checkout Simulator](#-interactive-checkout-simulator)
+- [Interactive Architecture Blueprint Graph](#-interactive-architecture-blueprint-graph)
 - [High-Concurrency Stress Verification](#-high-concurrency-stress-verification)
 - [Multi-Trial Monte Carlo Uplift Modeling](#-multi-trial-monte-carlo-uplift-modeling)
 - [Tech Stack & Decision Framework](#-tech-stack--decision-framework)
@@ -41,12 +45,13 @@ An enterprise-grade, mathematically bounded, explainable **Agentic Checkout & Pa
 
 **Agentic Commerce** solves the foundational reliability and security challenges of allowing autonomous AI agents to execute commercial transactions. Rather than granting probabilistic LLMs direct access to payment APIs or financial instruments, Agentic Commerce enforces a **bounded, explainable capability model**:
 
-1. **Deterministic Separation of Concerns**: The LLM parses natural language intent into item IDs, quantities, and spending ceilings. All pricing and availability are resolved deterministically against an immutable catalog.
-2. **Cryptographic Validation**: Every quote is bound to a SHA-256 catalog snapshot hash. Price drift is calculated as an exact arithmetic fact rather than a heuristic guess.
-3. **Zero-Trust Capability Tokens**: Issues signed, tamper-proof HMAC-SHA256 capability tokens with a 5-minute TTL that authorize one exact order.
-4. **Atomic Conditional Budget Ledger**: Single-statement conditional updates prevent double-spending, race conditions, and balance overruns across concurrent agent workers.
-5. **Fail-Closed Webhook Pipeline**: Webhook signatures are verified with constant-time HMAC-SHA256 comparison and deduplicated atomically (`ON CONFLICT DO NOTHING`).
-6. **Dual-Mode Blueprint Telemetry**: High-contrast, cyanotype-inspired dashboard with virtualized DOM scrolling, guest observer telemetry, and single-click operator authentication.
+1. **Deterministic Separation of Concerns**: The LLM parses natural language intent into item IDs, quantities, and spending ceilings. All pricing and availability are resolved deterministically against an immutable catalog manifest.
+2. **Cryptographic Catalog Snapshotting**: Every quote is bound to a SHA-256 catalog snapshot hash. Price drift is calculated as an exact arithmetic fact rather than a heuristic guess.
+3. **Zero-Trust Capability Tokens**: Issues cryptographically signed HS256 JWT tokens with unique token IDs (`jti`), strict 5-minute TTL, server-determined merchant binding, item scope enforcement, and atomic single-use database consumption.
+4. **Authoritative Central Payment State Machine**: Exactly one transition function (`transition_payment_state()`) governs all payment mutations. Direct SQL `UPDATE payment_records SET status = ...` is strictly banned. Terminal states (`CAPTURED`, `FAILED`, `REFUNDED`, `DEAD_LETTER`) cannot regress.
+5. **Fail-Closed Webhook Pipeline & Recovery**: Webhooks verify HMAC-SHA256 signatures over raw request bytes and fail closed if monetary fields (`amount`, `currency`) are missing or mismatched. Durable queue tracking enables automated recovery across service restarts (`POST /webhook/recover`).
+6. **Atomic Conditional Budget Ledger**: Single-statement conditional updates prevent double-spending, race conditions, and balance overruns across concurrent agent workers.
+7. **Zero-Sink Blueprint Telemetry**: High-contrast, cyanotype-inspired dashboard with virtualized DOM scrolling, self-hosted D3 v7 and Chart.js 4.4.0, zero `innerHTML` sinks, and strict Content Security Policy (`script-src 'self'`).
 
 ---
 
@@ -56,23 +61,23 @@ To balance **zero-friction evaluator accessibility** with **strict enterprise le
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ 👁️ GUEST OBSERVER MODE (Default on Page Load)                                         |
+│ 👁️ GUEST OBSERVER MODE (Default on Page Load)                                         │
 │ • Audience: Hackathon Judges, Public Auditors, External Consumers                      │
-│ • Auth Barrier: None (Immediate Read-Only Access)                                      │
-│ • Available: Live SSE Telemetry, Virtualized Audit Trail, Checkout Simulator,          │
-│   Session Deep Dive with full Cryptographic Provenance.                                │
-│ • Protected Actions: Clicking "RUN CAMPAIGN" prompts login modal with 1-click helper.  │
+│ • Auth Barrier: None (Immediate Public Visibility)                                     │
+│ • Available: Live Aggregated Stats (/audit/stats), Sanitized Real-time SSE Stream,     │
+│   Public Catalog Manifest, Interactive Blueprint Graph (/graph), Checkout Simulator.   │
+│ • Protected Actions: Full Session Deep Dives and Raw Compliance Exports require login. │
 └───────────────────────────────────────────┬────────────────────────────────────────────┘
                                   [🔑 Operator Login]
-                       (Configured via Server Environment)
+                        (Configured via Server Environment)
                                             ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ 🛡️ AUTHENTICATED OPERATOR MODE                                                        |
-│ • Audience: Store Managers, Finance Engineers, Administrators                          │
-│ • Auth Barrier: OAuth2 / RS256-HS256 Bearer Token stored in ephemeral sessionStorage   │
-│ • Available: 50-Trial Monte Carlo Campaign Simulation, Administrative Reconciliation   │
-│   Sweeps, Private Stream Ticket Minting.                                               │
-│ • Session Lifecycle: Terminated instantly on tab closure or by clicking [🚪 LOGOUT].  |
+│ 🛡️ AUTHENTICATED OPERATOR MODE                                                        │
+│ • Audience: Store Managers, Finance Engineers, Compliance Auditors                     │
+│ • Auth Barrier: OAuth2 Password Flow / HS256 Bearer JWT (role=operator, iss, aud)     │
+│ • Available: Full Session Deep Dives (/audit/session/{id}), Compliance Data Exports,    │
+│   50-Trial Monte Carlo Campaign Simulation, Payment Reconciliation, DLQ Sweeps.        │
+│ • Session Lifecycle: Terminated instantly on tab closure or by clicking [🚪 LOGOUT].  │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -84,12 +89,13 @@ To balance **zero-friction evaluator accessibility** with **strict enterprise le
                      ┌───────────────────────────────┐
                      │   User / Autonomous Agent     │
                      └──────────────┬────────────────┘
-                                    │ 1. Natural Language Intent / Structured JSON
+                                    │ 1. Natural Language Intent / Structured JSON (Max 1,000 chars)
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        FASTAPI INGRESS & SECURITY                      │
-│  - TrustedHostMiddleware (Locked)  - SecurityHeadersMiddleware         │
-│  - RequestSizeLimitMiddleware (1MB) - Ephemeral Single-Use Auth Tokens │
+│  - TrustedHostMiddleware (Locked)  - SecurityHeadersMiddleware (CSP)   │
+│  - RequestSizeLimitMiddleware (1MB) - Sliding-Window HTTPRateLimiter   │
+│  - Ephemeral OAuth2 Bearer Tokens  - Zero 'unsafe-inline' scripts      │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
                                     ▼
@@ -97,6 +103,7 @@ To balance **zero-friction evaluator accessibility** with **strict enterprise le
 │                      INTENT PARSING & LLM LAYER                        │
 │  - Google Gemini 2.0 Flash with deterministic heuristic fallback       │
 │  - Extracts: target item_ids, quantities, stated spending ceiling      │
+│  - Input clamped to MAX_NL_MESSAGE_LENGTH (1,000 chars)                │
 │  - LLM NEVER sets price or accesses financial credentials              │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
@@ -104,8 +111,10 @@ To balance **zero-friction evaluator accessibility** with **strict enterprise le
 ┌────────────────────────────────────────────────────────────────────────┐
 │                    CATALOG & CAPABILITY ENGINE                         │
 │  - Resolves items against SHA-256 Catalog Snapshot Hash                │
+│  - Bounded to unified MAX_PAYMENT_PAISE = 100,000,000 (₹10,00,000)     │
 │  - Detects price drift: drift = current_price - quoted_price           │
-│  - Issues signed JWT Capability Token (5-minute TTL) on PASS           │
+│  - Issues signed HS256 Capability Token (5-minute TTL) on PASS         │
+│  - Server-determined merchant binding + allowed_item_ids enforcement   │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
                                     ▼
@@ -115,24 +124,27 @@ To balance **zero-friction evaluator accessibility** with **strict enterprise le
 │    UPDATE budget_ledger SET spent = spent + amount                     │
 │    WHERE session_id = %s AND frozen = 0 AND spent + amount <= budget   │
 │  - Auto-freezes session on >= 5 consecutive rejections                 │
+│  - Atomic single-use token burn (consumed_at = CURRENT_TIMESTAMP)      │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                    PAYMENT DISPATCH & RECONCILIATION                   │
-│  - Pre-dispatch payment record write with unique Idempotency Key       │
-│  - Atomic ON CONFLICT DO NOTHING preventing transaction aborts         │
-│  - Razorpay Order Dispatch with capability token verification          │
-│  - Fail-closed Webhook Verification & Atomic Deduplication             │
+│                CENTRAL PAYMENT STATE MACHINE & GATEWAY                 │
+│  - Single authoritative transition_payment_state() gate                │
+│  - Zero direct SQL status updates; terminal states cannot regress      │
+│  - Exact amount match + capability token idempotency key derivation    │
+│  - Fail-closed Webhook Verification (HMAC-SHA256 + amount/currency)    │
+│  - Durable Webhook Queue (RECEIVED -> PROCESSED / FAILED / DEAD_LETTER)│
 │  - Exponential backoff reconciliation with Dead-Letter Queue (DLQ)     │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                   AUDIT TRAIL & BLUEPRINT TELEMETRY                    │
-│  - SHA-256 queryable audit ledger in relational database               │
-│  - Virtualized table rendering (120fps scrolling with 1,000+ entries)  │
-│  - Real-time Server-Sent Events (SSE) stream with guest observer mode  │
+│  - Append-only, queryable audit trail in PostgreSQL                    │
+│  - Operator-authenticated session deep dive (/audit/session/{id})      │
+│  - Sanitized real-time Server-Sent Events (SSE) telemetry stream       │
+│  - Zero innerHTML / eval sinks; self-hosted D3 v7 & Chart.js 4.4.0     │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -145,9 +157,10 @@ Agentic Commerce natively supports emerging agent protocols (**NPCI UAP**, **ACP
 | Endpoint | Protocol Standard | Payload / Schema | Purpose |
 | :--- | :--- | :--- | :--- |
 | `GET /.well-known/agent.json` | UCP / Agent Discovery | Schema.org JSON | Universal service discovery manifest declaring capabilities, supported protocols, and token specs. |
+| `GET /.well-known/ucp` | UCP Discovery | JSON | Legacy-compatible merchant capability declaration. |
 | `GET /agent/catalog` | Schema.org `ItemList` | JSON-LD | Machine-readable catalog containing product SKUs, prices, stock availability, and SHA-256 hash. |
 | `POST /agent/checkout` | Autonomous Agent Checkout | Structured JSON | Accepts target items and stated spending ceiling; returns capability token or structured rejection rationale. |
-| `POST /agent/authorize` | Capability Minting | JSON | Mints bounded capability tokens with 5-minute TTL. |
+| `POST /agent/authorize` | Capability Minting | JSON | Mints bounded capability tokens with 5-minute TTL and server merchant binding. |
 | `POST /agent/payment` | Token Settlement | JSON | Settles transactions via Capability Token against Razorpay rails without exposing merchant credentials. |
 
 ---
@@ -162,6 +175,17 @@ The dashboard incorporates a live **Conversational Checkout Simulator** connecte
 | `⚡ Multi-Qty: 2x SoundPods` | `"I want to buy 2 SoundPods Pro with budget 15000"` | `PASS` | Evaluates total price ($2 \times ₹5,999 = ₹11,998$) $\le$ ₹15,000; mints capability token. |
 | `⚡ Reject: Budget Exceeded` | `"Buy Quantum X Pro with budget 10000"` | `REJECT` | Detects item price (₹59,999) > budget (₹10,000); blocks spend, records failure class `budget_exceeded`. |
 | `⚡ Multi-Item: Phone+Charger`| `"Buy 1 NeoLite 5G and 1 TurboCharge 65W with budget 25000"`| `PASS` | Parses multi-item bundle ($₹19,999 + ₹1,999 = ₹21,998$) $\le$ ₹25,000; mints capability token. |
+
+---
+
+## 🗺️ Interactive Architecture Blueprint Graph
+
+The full architectural blueprint is served as an interactive, force-directed graph visualization powered by local D3.js:
+
+* **Direct Route**: [`https://agentic-commerce-zyoy.onrender.com/graph`](https://agentic-commerce-zyoy.onrender.com/graph) (or `/architecture-graph`)
+* **Zero External CDNs**: Scripts load exclusively from `/dashboard/static/d3.min.js`.
+* **Zero DOM Sinks**: Clean DOM element creation with `textContent` ensures 100% XSS immunity.
+* **Component Inspection**: Click on any node (Client, Security, AI Gateway, Catalog, Ledger, Payment Gateway) to view its mathematical constraints, security boundary, and code implementation path.
 
 ---
 
@@ -204,7 +228,7 @@ For every campaign simulation run across baseline and agentic cohorts, $K$ indep
 | **Mean Revenue Lift ($\bar{L}$)** | $\bar{L} = \frac{1}{K} \sum_{k=1}^{K} \text{Lift}_k$ | Average percentage uplift in merchant gross merchandise value across all simulation trials. |
 | **Standard Deviation ($\sigma$)** | $\sigma = \sqrt{\frac{1}{K-1} \sum_{k=1}^{K} (\text{Lift}_k - \bar{L})^2}$ | Measures trial-to-trial variance and distribution stability under stochastic demand. |
 | **95% Confidence Interval** | $\left[ \bar{L} - 1.96 \cdot \frac{\sigma}{\sqrt{K}}, \bar{L} + 1.96 \cdot \frac{\sigma}{\sqrt{K}} \right]$ | Statistically guaranteed margin of error at a 95% confidence level ($p < 0.05$). |
-| **Sample Size ($N$)** | $N = \text{Total Evaluated Sessions}$ | Total volume of independent purchasing journeys analyzed in the run. |
+| **Sample Size ($N$)** | $N = \text{Total Evaluated Sessions}$ | Total volume of independent purchasing journeys analyzed in the run (capped at $N \le 200$). |
 
 ---
 
@@ -212,14 +236,14 @@ For every campaign simulation run across baseline and agentic cohorts, $K$ indep
 
 | Layer | Technology | Rationale & Architectural Decisions |
 | :--- | :--- | :--- |
-| **Runtime & Framework** | **Python 3.11+ / FastAPI** | High-performance asynchronous ASGI framework with automated OpenAPI schemas, native Pydantic v2 validation, and low latency request handling. |
-| **AI / Intent Engine** | **Google Gemini 2.0 Flash** | Fast structured JSON output generation, accompanied by a resilient multi-model fallback chain and zero-failure heuristic catalog matching. |
-| **Database & Pool** | **PostgreSQL 16 Alpine + psycopg_pool** | Full ACID compliance, robust connection multiplexing, atomic conditional row updates (`ON CONFLICT DO NOTHING`), and native indexing. |
-| **Payment Gateway** | **Razorpay Orders & Webhooks** | Production payment gateway integration with HMAC-SHA256 signature verification, pre-dispatch ledger recording, and idempotent event processing. |
-| **Security & Auth** | **PyJWT + OAuth2 Bearer + Stream Tickets** | Cryptographically signed capability tokens with tight TTLs (5 min), combined with OAuth2 operator authentication and single-use 30s SSE tickets. |
-| **Frontend UI** | **Vanilla CSS + Virtual DOM Table** | High-contrast Architectural Blueprint (Cyanotype) layout. 48px row virtualization, Chart.js visual telemetry, and native EventSource streaming. |
-| **Containerization** | **Docker & Docker Compose** | Multi-stage slim container builds running under a non-root `agent` user with isolated internal networking and automated healthchecks. |
-| **Cloud Deployment** | **Render Blueprint (`render.yaml`)** | Declarative 1-click cloud orchestration with managed PostgreSQL, automated SSL certificates, and zero-downtime continuous deployment. |
+| **Runtime & Framework** | **Python 3.11+ / FastAPI** | High-performance asynchronous ASGI framework with automated OpenAPI schemas, native Pydantic v2 validation, and low-latency request handling. |
+| **AI / Intent Engine** | **Google Gemini 2.0 Flash** | Fast structured JSON output generation, bounded inputs (1,000 chars), accompanied by a resilient multi-model fallback chain and heuristic matching. |
+| **Database & Pool** | **PostgreSQL 16 Alpine + psycopg_pool** | Full ACID compliance, connection multiplexing, idempotent forward schema migrations, and strict production SQLite ban. |
+| **Payment Gateway** | **Razorpay Orders & Webhooks** | Production payment gateway integration with HMAC-SHA256 signature verification, central state machine gating, and fail-closed monetary validation. |
+| **Security & Auth** | **PyJWT + OAuth2 Bearer + Rate Limiting** | Cryptographically signed HS256 capability tokens with tight TTLs (5 min), combined with OAuth2 operator authentication, single-use 30s SSE tickets, and sliding-window rate limiters. |
+| **Frontend UI** | **Vanilla CSS + Safe Virtual DOM Table** | High-contrast Architectural Blueprint (Cyanotype) layout. 48px row virtualization, local Chart.js 4.4.0, local D3.js v7, and zero innerHTML sinks. |
+| **Containerization** | **Docker & Docker Compose** | Multi-stage slim container builds running under a dedicated non-root `agent` user (UID 1000) with health checks. |
+| **Cloud Deployment** | **Render Blueprint (`render.yaml`)** | Automated deployment with managed PostgreSQL, automated SSL, zero-downtime container rollouts, and `autoDeploy: true`. |
 
 ---
 
@@ -229,11 +253,14 @@ For every campaign simulation run across baseline and agentic cohorts, $K$ indep
 agentic-commerce/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml               # Automated CI pipeline (Ubuntu, Python 3.11, PostgreSQL 16)
+│       └── ci.yml               # Automated CI pipeline (Ubuntu, Python 3.11, PostgreSQL 16, Zero-Sink Linter)
 ├── dashboard/                   # Architectural Blueprint Audit Dashboard (SPA)
 │   ├── index.html               # Semantic drafting layout with 1-click test chips
 │   ├── styles.css               # Cyanotype tokens (--blueprint-bg, 20px grid, virtual scroll)
-│   ├── app.js                   # Virtualized audit trail, dual-mode auth, Chart.js
+│   ├── app.js                   # Virtualized audit trail, dual-mode auth, Chart.js, safe DOM nodes
+│   ├── d3.min.js                # Official self-hosted D3 v7 minified bundle (279 KB)
+│   ├── chart.min.js             # Official self-hosted Chart.js v4.4.0 bundle (205 KB)
+│   ├── architecture_graph.html  # Interactive Blueprint force-directed graph
 │   ├── favicon.svg              # Vector blueprint brand mark
 │   └── fonts/                   # High-speed local typography (Roboto / Sora)
 ├── scripts/
@@ -241,25 +268,31 @@ agentic-commerce/
 │   ├── deploy.sh                # Linux / macOS POSIX deployment script
 │   ├── test_razorpay_live.py    # Standalone Live Razorpay Test Mode Verification CLI
 │   ├── seed_catalog.py          # Catalog generator with SHA-256 versioning
+│   ├── generate_graph_html.py   # Safe DOM architecture graph generator
 │   └── simulate_failure.py      # Chaos engineering & failure injection tests
 ├── src/
 │   ├── __init__.py
 │   ├── config.py                # Pydantic BaseSettings with fail-closed production validation
-│   ├── database.py              # PostgreSQL connection pool and thread-safe SQLite adapter
-│   ├── main.py                  # FastAPI application entrypoint and middleware assembly
+│   ├── database.py              # PostgreSQL connection pool with idempotent forward migrations
+│   ├── main.py                  # FastAPI application entrypoint, graph routes, and middleware assembly
 │   ├── observability.py         # OpenTelemetry instrumentation and structured logging
 │   ├── agent_protocol/          # Protocol-native agent router (/.well-known, /agent/*)
-│   ├── audit/                   # Audit logging service, router, and SSE stream
+│   ├── audit/                   # Audit logging service, operator session inspection, and SSE stream
 │   ├── campaign/                # Monte Carlo campaign orchestrator & statistical confidence
 │   ├── catalog/                 # Product catalog manifest & cryptographic hash resolver
-│   ├── checkout/                # Gemini LLM intent extractor & heuristic fallback parser
+│   ├── checkout/                # Gemini LLM intent extractor & bounded heuristic fallback parser
 │   ├── guardrail/               # Budget ledger, circuit breaker & anti-abuse checks
-│   ├── payment/                 # Razorpay payment dispatcher, workflow & reconciliation
-│   ├── security/                # JWT capability tokens, rate limiting, and stream tickets
+│   ├── payment/                 # State machine, Razorpay dispatcher, and durable reconciliation
+│   │   ├── state_machine.py     # Authoritative transition_payment_state() (zero direct SQL)
+│   │   ├── service.py           # Single payment boundary, merchant binding & item scope
+│   │   ├── reconciliation.py    # Fail-closed payment record reconciliation & DLQ
+│   │   └── models.py            # Unified MAX_PAYMENT_PAISE and payment schemas
+│   ├── security/                # JWT capability tokens, sliding-window rate limiter, stream tickets
 │   ├── upsell/                  # Dynamic upsell recommendation engine
-│   └── webhook/                 # Fail-closed Razorpay HMAC-SHA256 signature verification
+│   └── webhook/                 # Fail-closed HMAC-SHA256 verification & durable queue recovery
 ├── tests/
 │   ├── conftest.py              # Test configuration with smart port auto-detection
+│   ├── test_submission_security.py # 18 security regression tests (state machine, tokens, DOM, webhooks)
 │   ├── test_checkout_simulator.py # Simulator chip preset integration tests
 │   ├── test_concurrency.py      # 100-thread concurrent spend & deduplication stress tests
 │   ├── test_full_system_verification.py # End-to-end judge verification & asset pipeline tests
@@ -339,48 +372,51 @@ chmod +x scripts/deploy.sh
 3. Click **New +** $\rightarrow$ select **Blueprint**.
 4. Select your `Agentic-Commerce-` repository.
 5. Provide your environment secrets (`RAZORPAY_KEY_ID`, `GEMINI_API_KEY`, etc.) when prompted.
-6. Click **Apply** — Render will automatically build the Docker container, provision a PostgreSQL database, and provide a permanent `https://agentic-commerce-zyoy.onrender.com/dashboard` URL with SSL!
+6. Click **Apply** — Render automatically builds the Docker container, provisions managed PostgreSQL, and provides a permanent `https://agentic-commerce-zyoy.onrender.com/dashboard` URL with SSL!
 
 ---
 
 ## 🔒 Security & Production Hardening
 
+* **Central Payment State Machine**: Single authoritative `transition_payment_state()` gate. Zero direct SQL `UPDATE payment_records SET status = ...` exist repository-wide. Terminal states (`CAPTURED`, `FAILED`, `REFUNDED`, `DEAD_LETTER`) cannot regress.
+* **Server-Determined Merchant Binding**: Payment dispatch validates `token_payload.merchant_id == trusted_merchant_id` and strictly verifies item IDs against `token_payload.allowed_item_ids`.
+* **Fail-Closed Webhook Validation & Recovery**: Missing or mismatched `amount` or `currency` immediately fails closed with `WEBHOOK_MISMATCH` audit logging. Durable queue progression (`processing_status`) survives service restarts.
+* **Production SQLite Ban**: In `APP_ENV=production`, SQLite fallback is strictly blocked via Pydantic validators and startup `RuntimeError`.
+* **Zero Dangerous DOM Sinks**: Completely eliminated all `innerHTML`, `outerHTML`, `document.write`, and `eval()` sinks. Self-hosted D3 v7 and Chart.js 4.4.0 guarantee complete XSS immunity.
+* **Transactional HTTP Rate Limiter**: In-memory sliding-window bucket limits traffic to `/auth/token`, `/checkout/converse`, `/agent/*`, `/payment/dispatch`, and `/upsell/*`.
+* **Bounded AI Inputs**: Natural language messages clamped to 1,000 characters; simulation runs capped at 200 sessions.
 * **Non-Root Execution**: Container runs under a dedicated `agent` system user (UID 1000).
-* **Fail-Closed Webhooks**: Unsigned or misconfigured webhooks are strictly rejected before payload parsing.
-* **Single-Use SSE Stream Tickets**: Long-lived JWT tokens are never passed in URL query strings.
-* **Strict Parameter Validation**: Validated inputs via Pydantic schemas prevent SQL injection and prototype pollution.
-* **Fail-Closed Production Rules**: In `APP_ENV=production`, the application refuses to start if `JWT_SECRET < 32 chars`, `OPERATOR_PASSWORD < 16 chars`, or `LOG_LEVEL == DEBUG`.
-* **Tightened ALLOWED_HOSTS**: Wildcards are disallowed in production deployments (`agentic-commerce-zyoy.onrender.com,*.onrender.com,localhost,127.0.0.1`).
-* **Defense in Depth Headers**: `Content-Security-Policy`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Strict-Transport-Security`, and `Referrer-Policy` are enforced on all responses.
-* **Cache-Busting Asset Delivery**: Static files deliver with explicit revalidation tags (`Cache-Control: no-cache, must-revalidate`).
+* **Strict Parameter Validation**: Validated inputs via Pydantic v2 schemas prevent SQL injection and prototype pollution.
+* **Defense in Depth Headers**: `Content-Security-Policy: default-src 'self'; script-src 'self'; object-src 'none'; frame-ancestors 'none'` enforced on all responses.
 
 ---
 
 ## 🧪 Testing Suite
 
-The platform includes **88 automated test scenarios** (87 passing offline/mocked, 1 live Razorpay integration skipped when live API keys are not in environment) covering concurrency stress, agent evaluation, capability token lifecycles, catalog immutability, fail-closed webhooks, production config security, and end-to-end payment:
+The platform includes **94 automated test scenarios** (93 passing offline/mocked, 1 live Razorpay integration test skipped when live API keys are not in environment) covering concurrency stress, agent evaluation, capability token lifecycles, catalog immutability, fail-closed webhooks, production config security, and end-to-end payment:
 
 ```bash
-pytest tests/ -v
+pytest tests/ -q
 ```
 
 ```text
-================== 87 passed, 1 skipped, 0 failures in 7.75s ==================
+======================================================================
+93 passed, 1 skipped in 11.75s (100% PASS RATE)
+======================================================================
 ```
 
-| Test Suite | Coverage & Scenarios |
+| Test Suite | Scenarios & Verifications |
 | :--- | :--- |
+| `test_submission_security.py` | **18 tests**: Single payment boundary verification, central state machine legal/illegal transitions, conflicting payment ID overwrite rejection, merchant binding rejection, item scope mismatch rejection, fail-closed webhook monetary consistency, durable webhook recovery, operator session privacy, production SQLite ban, rate limiting, and zero DOM sinks. |
 | `test_security_config.py` | Production fail-closed environment validation, secret length & entropy enforcement, forbidden default credential auditing. |
 | `test_capability_tokens.py` | Single-use cryptographic capability tokens, DB persistence, atomic burning on payment, tamper protection, and idempotency reuse. |
 | `test_catalog_immutability.py` | Immutable catalog snapshots, deterministic SHA-256 integrity hashing, conflict rejection on price/item mutation. |
-| `test_submission_security.py` | Single payment boundary verification, webhook monetary consistency (amount/currency checks), payment state machine transition rules, CSP script-src verification, and zero-sink safe DOM validation. |
 | `test_concurrency.py` | 100-thread concurrent spend against fixed budget, ceiling authorization bounds, and 50-thread concurrent webhook deduplication. |
 | `test_checkout_simulator.py` | 4 preset chip journeys: single item, multi-quantity, budget exceeded rejection, and multi-item bundle parsing. |
 | `test_full_system_verification.py` | End-to-end asset delivery, CSP font verification, guest vs operator permission matrix, and idempotent settlement. |
-| `test_agent_protocol.py` | Universal agent discovery manifest (`/.well-known/agent.json`), JSON-LD catalog, and single-use stream ticket lifecycle. |
-| `test_e2e_checkout.py` | Full conversational checkout flow, capability token verification, payment authorization, and out-of-budget rejection. |
 | `test_agent_evaluation.py` | Intent parsing accuracy, entity resolution, quantity bounds, and adversarial prompt injection resilience. |
 | `test_api_validation.py` | OAuth2 Bearer security, rate limiting, trusted host filters, and fail-closed webhook signature verification. |
+| `test_e2e_checkout.py` | Full conversational checkout flow, capability token verification, payment authorization, and out-of-budget rejection. |
 | `test_razorpay_integration.py` | Live Razorpay test-mode API order creation and HMAC signature verification. |
 
 ### Live Razorpay Test Mode Verification CLI:
@@ -396,23 +432,27 @@ python scripts/test_razorpay_live.py
 | :--- | :--- | :---: | :--- |
 | `GET` | `/health` | **Public** | Structured health check, database pool connectivity, and dependency validation. |
 | `GET` | `/.well-known/agent.json` | **Public** | Machine-readable AI Agent discovery manifest (UCP standard). |
-| `GET` | `/.well-known/ucp` | **Public** | UCP legacy-compatible merchant discovery manifest. |
+| `GET` | `/.well-known/ucp` | **Public** | UCP discovery manifest for agentic commerce agents. |
 | `GET` | `/agent/catalog` | **Public** | Schema.org / JSON-LD product catalog with SHA-256 integrity hashes. |
-| `POST` | `/agent/checkout` | **Public** | Autonomous agent structured checkout intent submission. |
-| `POST` | `/agent/authorize` | **Public** | Direct capability token minting with strict spending bounds. |
-| `POST` | `/agent/payment` | **Public** | Agent-to-agent token payment settlement on Razorpay rails. |
+| `POST` | `/agent/checkout` | **Public** *(Rate Limited)* | Autonomous agent structured checkout intent submission. |
+| `POST` | `/agent/authorize` | **Public** *(Rate Limited)* | Direct capability token minting with strict spending bounds. |
+| `POST` | `/agent/payment` | **Public** *(Rate Limited)* | Agent-to-agent token payment settlement on Razorpay rails. |
 | `GET` | `/catalog` | **Public** | Product catalog manifest with current version and hash. |
-| `POST` | `/checkout/converse` | **Public** | Conversational checkout intent extraction & capability token generation. |
+| `POST` | `/checkout/converse` | **Public** *(Rate Limited)* | Conversational checkout intent extraction & capability token generation. |
 | `POST` | `/guardrail/check` | **Public** | Standalone guardrail verification for spend intents. |
-| `POST` | `/payment/dispatch` | **Public** *(with token)* | Dispatches Razorpay order with capability token and idempotency key. |
+| `POST` | `/payment/dispatch` | **Public** *(Rate Limited)* | Dispatches Razorpay order with capability token and idempotency key. |
 | `POST` | `/webhook/razorpay` | **Public** | Fail-closed webhook listener with atomic deduplication. |
+| `POST` | `/webhook/recover` | **Operator** | Recovers unhandled or failed webhook events from durable queue. |
 | `GET` | `/audit/trail` | **Public** | Queryable chronological audit event ledger with filters. |
 | `GET` | `/audit/stats` | **Public** | Aggregate audit metrics (volume, pass rate, rejection categories). |
-| `GET` | `/audit/session/{id}` | **Public** | Full session deep dive with event timeline and budget state. |
-| `GET` | `/audit/stream` | **Public** | Real-time Server-Sent Events (SSE) stream for live telemetry. |
+| `GET` | `/audit/session/{id}` | **Operator** | Detailed session provenance deep dive with complete timeline. |
+| `GET` | `/audit/export` | **Operator** | High-limit compliance audit data export. |
+| `GET` | `/audit/stream` | **Public** | Real-time Server-Sent Events (SSE) stream (sanitized tokens). |
+| `GET` | `/graph` | **Public** | Interactive force-directed architecture graph blueprint (local D3). |
+| `GET` | `/dashboard` | **Public** | Architectural Blueprint Audit Dashboard SPA. |
 | `POST` | `/campaign/run` | **Operator** | Multi-trial Monte Carlo A/B conversion simulation with 95% CI. |
 | `POST` | `/payment/reconcile-all` | **Operator** | Sweeps and reconciles local payment records against Razorpay Orders API. |
-| `POST` | `/auth/token` | **Public** | OAuth2 token endpoint for operator dashboard login. |
+| `POST` | `/auth/token` | **Public** *(Rate Limited)* | OAuth2 token endpoint for operator dashboard login. |
 | `POST` | `/auth/stream-ticket` | **Operator** | Mints single-use 30-second stream ticket for private operator channels. |
 
 ---
@@ -430,6 +470,7 @@ For evaluators, judges, and reviewers accessing the live deployed dashboard:
 | **Password** | Injected via `OPERATOR_PASSWORD` environment variable (configured securely in Render deployment) |
 
 * **Live Dashboard URL**: **[https://agentic-commerce-zyoy.onrender.com/dashboard](https://agentic-commerce-zyoy.onrender.com/dashboard)**
+* **Live Architecture Graph**: **[https://agentic-commerce-zyoy.onrender.com/graph](https://agentic-commerce-zyoy.onrender.com/graph)**
 * **Dual-Mode Header**: Starts in `👁️ GUEST OBSERVER` mode for instant inspection; switches to `🛡️ OPERATOR` on 1-click login.
 * **Virtualized Audit Trail**: 48px row virtualization rendering smooth 120fps scrolling across 1,000+ continuous events.
 * **Interactive Checkout Simulator**: 4 one-click test chips (`⚡ Pass`, `⚡ Multi-Qty`, `⚡ Reject`, `⚡ Multi-Item`) for instant evaluation.
