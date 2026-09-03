@@ -198,13 +198,13 @@ class TestCheckoutInputValidation:
         assert response.status_code == 422
 
     def test_oversized_budget_rejected(self, client):
-        """Budget over ₹1 lakh must return 422."""
+        """Budget over unified MAX_PAYMENT_PAISE (₹10 lakh) must return 422."""
         response = client.post(
             "/checkout/converse",
             json={
                 "message": "Buy a phone",
                 "session_id": "test",
-                "budget_paise": 10_000_001,
+                "budget_paise": 100_000_001,
             },
         )
         assert response.status_code == 422

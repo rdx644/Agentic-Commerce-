@@ -24,6 +24,7 @@ from src.database import get_db, get_db_transaction
 from src.guardrail.models import FailureClass
 from src.payment.models import ReconciliationResult
 from src.payment import service as payment_service
+from src.payment.state_machine import transition_payment_state
 from src.payment.workflow import compute_backoff_delay
 
 logger = logging.getLogger(__name__)
@@ -35,8 +36,21 @@ STALE_PENDING_THRESHOLD_SECONDS = 300  # 5 minutes
 def reconcile_payment(payment_record_id: int) -> ReconciliationResult:
     """
     Reconcile a single payment record against Razorpay's source of truth.
+    Atomically accounts for every attempt, validates monetary identity,
+    and transitions state through the central payment state machine.
     """
     settings = get_settings()
+
+    # Atomically increment attempts on every reconciliation invocation
+    with get_db_transaction() as conn:
+        conn.execute(
+            """
+            UPDATE payment_records
+            SET attempts = attempts + 1, updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+            """,
+            (payment_record_id,),
+        )
 
     with get_db() as conn:
         row = conn.execute(
@@ -51,6 +65,8 @@ def reconcile_payment(payment_record_id: int) -> ReconciliationResult:
     razorpay_order_id = row["razorpay_order_id"]
     local_status = row["status"]
     attempts = row["attempts"]
+    local_amount = row["amount_paise"]
+    local_currency = row["currency"]
 
     # If no Razorpay order ID, we never got through — can't reconcile
     if not razorpay_order_id:
@@ -109,6 +125,97 @@ def reconcile_payment(payment_record_id: int) -> ReconciliationResult:
 
     # Compare our state with Razorpay's truth
     rzp_status = razorpay_order.get("status", "unknown")
+    rzp_amount = razorpay_order.get("amount")
+    rzp_currency = razorpay_order.get("currency")
+
+    # ── Monetary Validation ───────────────────────────────────────────────────
+    if rzp_amount is not None and rzp_amount != local_amount:
+        mismatch_msg = f"Reconciliation amount mismatch: razorpay={rzp_amount}, local={local_amount}"
+        logger.error(mismatch_msg)
+        with get_db_transaction() as conn:
+            conn.execute(
+                """
+                INSERT INTO audit_log
+                (session_id, action, decision, failure_class, reason,
+                 razorpay_order_id, actor, metadata_json)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    session_id,
+                    "RECONCILIATION_MISMATCH",
+                    "REJECT",
+                    "monetary-mismatch",
+                    mismatch_msg,
+                    razorpay_order_id,
+                    "system",
+                    json.dumps({"rzp_amount": rzp_amount, "local_amount": local_amount}),
+                ),
+            )
+        if attempts >= settings.max_reconciliation_attempts:
+            _dead_letter(payment_record_id, session_id, mismatch_msg, attempts)
+            return ReconciliationResult(
+                payment_record_id=payment_record_id,
+                session_id=session_id,
+                razorpay_order_id=razorpay_order_id,
+                local_status=local_status,
+                razorpay_status=rzp_status,
+                reconciled=False,
+                action_taken=f"Dead-lettered: {mismatch_msg}",
+                dead_lettered=True,
+            )
+        return ReconciliationResult(
+            payment_record_id=payment_record_id,
+            session_id=session_id,
+            razorpay_order_id=razorpay_order_id,
+            local_status=local_status,
+            razorpay_status=rzp_status,
+            reconciled=False,
+            action_taken=f"Quarantined: {mismatch_msg}",
+        )
+
+    if rzp_currency and rzp_currency != local_currency:
+        mismatch_msg = f"Reconciliation currency mismatch: razorpay={rzp_currency}, local={local_currency}"
+        logger.error(mismatch_msg)
+        with get_db_transaction() as conn:
+            conn.execute(
+                """
+                INSERT INTO audit_log
+                (session_id, action, decision, failure_class, reason,
+                 razorpay_order_id, actor, metadata_json)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    session_id,
+                    "RECONCILIATION_MISMATCH",
+                    "REJECT",
+                    "monetary-mismatch",
+                    mismatch_msg,
+                    razorpay_order_id,
+                    "system",
+                    json.dumps({"rzp_currency": rzp_currency, "local_currency": local_currency}),
+                ),
+            )
+        if attempts >= settings.max_reconciliation_attempts:
+            _dead_letter(payment_record_id, session_id, mismatch_msg, attempts)
+            return ReconciliationResult(
+                payment_record_id=payment_record_id,
+                session_id=session_id,
+                razorpay_order_id=razorpay_order_id,
+                local_status=local_status,
+                razorpay_status=rzp_status,
+                reconciled=False,
+                action_taken=f"Dead-lettered: {mismatch_msg}",
+                dead_lettered=True,
+            )
+        return ReconciliationResult(
+            payment_record_id=payment_record_id,
+            session_id=session_id,
+            razorpay_order_id=razorpay_order_id,
+            local_status=local_status,
+            razorpay_status=rzp_status,
+            reconciled=False,
+            action_taken=f"Quarantined: {mismatch_msg}",
+        )
 
     # Map Razorpay status to our status
     status_map = {
@@ -119,40 +226,14 @@ def reconcile_payment(payment_record_id: int) -> ReconciliationResult:
     correct_status = status_map.get(rzp_status, local_status)
 
     if correct_status != local_status:
-        # Our ledger is wrong — correct it
-        with get_db_transaction() as conn:
-            conn.execute(
-                """
-                UPDATE payment_records
-                SET status = %s, attempts = attempts + 1, updated_at = NOW()
-                WHERE id = %s
-                """,
-                (correct_status, payment_record_id),
-            )
-
-        # Log the reconciliation correction to audit trail
-        with get_db_transaction() as conn:
-            conn.execute(
-                """
-                INSERT INTO audit_log
-                (session_id, action, decision, reason, razorpay_order_id,
-                 actor, metadata_json)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """,
-                (
-                    session_id,
-                    "RECONCILIATION",
-                    "PASS",
-                    f"Corrected: {local_status} → {correct_status} (Razorpay: {rzp_status})",
-                    razorpay_order_id,
-                    "system",
-                    json.dumps({
-                        "local_status_before": local_status,
-                        "razorpay_status": rzp_status,
-                        "corrected_to": correct_status,
-                    }),
-                ),
-            )
+        # State machine transition
+        transition_payment_state(
+            payment_record_id=payment_record_id,
+            new_status=correct_status,
+            razorpay_order_id=razorpay_order_id,
+            actor="reconciliation",
+            reason=f"Corrected: {local_status} -> {correct_status} (Razorpay: {rzp_status})",
+        )
 
         logger.info(
             "Reconciliation corrected: order=%s, %s → %s",
@@ -283,10 +364,15 @@ def _dead_letter(
             (session_id, payment_record_id, FailureClass.RECONCILIATION_FAIL.value, reason, attempts),
         )
 
-        conn.execute(
-            "UPDATE payment_records SET status = 'DEAD_LETTER' WHERE id = %s",
-            (payment_record_id,),
-        )
+    # Central state machine transition to DEAD_LETTER
+    transition_payment_state(
+        payment_record_id=payment_record_id,
+        new_status="DEAD_LETTER",
+        actor="reconciliation",
+        reason=reason,
+    )
+
+    with get_db_transaction() as conn:
 
         # Audit log entry
         conn.execute(

@@ -126,14 +126,14 @@ class TestBehavioralContracts:
             )
 
     def test_budget_must_be_bounded(self):
-        """Contract: budget_paise cannot exceed ₹1 lakh (10,000,000 paise)."""
+        """Contract: budget_paise cannot exceed MAX_PAYMENT_PAISE (100,000,000 paise)."""
         from src.checkout.models import CheckoutRequest
 
         with pytest.raises(Exception):
             CheckoutRequest(
                 message="Buy everything",
                 session_id="test-session",
-                budget_paise=10_000_001,  # Over limit
+                budget_paise=100_000_001,  # Over unified limit
             )
 
 

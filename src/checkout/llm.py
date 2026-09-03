@@ -22,6 +22,8 @@ from src.checkout.models import ParsedCartItem, ParsedIntent
 
 logger = logging.getLogger(__name__)
 
+MAX_NL_MESSAGE_LENGTH = 1000
+
 # ── Gemini client (lazy init) ────────────────────────────────────────────────
 
 _client: Optional[genai.Client] = None
@@ -171,7 +173,11 @@ def parse_intent(message: str) -> ParsedIntent:
     """
     Parse natural language checkout message into structured intent using Gemini
     with robust heuristic fallback.
+    Enforces maximum input length to prevent token-exhaustion attacks.
     """
+    if len(message) > MAX_NL_MESSAGE_LENGTH:
+        logger.warning("Truncating oversized checkout message (%d -> %d chars)", len(message), MAX_NL_MESSAGE_LENGTH)
+        message = message[:MAX_NL_MESSAGE_LENGTH]
     # Get current catalog for context
     try:
         manifest = catalog_service.get_manifest()

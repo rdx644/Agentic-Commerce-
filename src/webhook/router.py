@@ -78,7 +78,18 @@ async def receive_webhook(request: Request):
     # ── Process synchronously for durability (no fire-and-forget) ────────
     try:
         result = webhook_handler.process_webhook_event(event_id, event_type, payload)
-        return {"status": "processed", "event_id": event_id, "action": result.get("action", "none")}
+        action = result.get("action", "none")
+        if action == "monetary_mismatch_rejected":
+            return {"status": "monetary_mismatch_rejected", "event_id": event_id, "action": action}
+        return {"status": "processed", "event_id": event_id, "action": action}
     except Exception as e:
         logger.error("Webhook processing failed: event=%s, error=%s", event_id, e)
-        return {"status": "processing_error", "event_id": event_id}
+        webhook_handler._mark_webhook_processed(event_id, error=str(e), status="FAILED")
+        return {"status": "processing_error", "event_id": event_id, "error": str(e)}
+
+
+@router.post("/recover", summary="Recover failed webhooks")
+async def recover_webhooks():
+    """Trigger durable recovery of any unprocessed or failed webhook events."""
+    recovered = webhook_handler.recover_failed_webhooks()
+    return {"status": "ok", "processed_count": len(recovered), "events": recovered}

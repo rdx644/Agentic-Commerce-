@@ -4,8 +4,11 @@ Payment data models.
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, ConfigDict, Field
+
+# Shared upper bound for all financial payment interfaces (₹10,00,000 = 100,000,000 paise)
+MAX_PAYMENT_PAISE: int = 100_000_000
 
 
 class PaymentDispatchRequest(BaseModel):
@@ -15,8 +18,9 @@ class PaymentDispatchRequest(BaseModel):
 
     session_id: str = Field(..., min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9_-]+$")
     capability_token: str = Field(..., min_length=1, max_length=4096, description="JWT from guardrail PASS")
-    amount_paise: int = Field(..., gt=0, le=10_000_000)
+    amount_paise: int = Field(..., gt=0, le=MAX_PAYMENT_PAISE)
     currency: str = Field(default="INR", pattern=r"^INR$")
+    item_ids: Optional[List[str]] = Field(None, max_length=50, description="Optional items to verify against capability scope")
 
 
 class PaymentDispatchResponse(BaseModel):

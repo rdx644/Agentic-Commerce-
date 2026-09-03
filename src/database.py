@@ -108,11 +108,13 @@ CREATE TABLE IF NOT EXISTS webhook_events (
     event_type          TEXT NOT NULL,
     payload_json        TEXT NOT NULL,
     processed           INTEGER NOT NULL DEFAULT 0,
+    processing_status   TEXT NOT NULL DEFAULT 'RECEIVED',
     processing_attempts INTEGER NOT NULL DEFAULT 0,
     last_error          TEXT,
     processed_at        TIMESTAMP,
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_webhook_status ON webhook_events(processing_status);
 
 -- Dead letter queue (failed reconciliation after N attempts)
 CREATE TABLE IF NOT EXISTS dead_letter_queue (
@@ -240,6 +242,8 @@ def init_db(max_retries: int = 3, retry_delay: float = 0.5) -> None:
     db_url = settings.database_url
 
     if db_url.startswith("sqlite"):
+        if settings.is_production:
+            raise RuntimeError("SQLite database is strictly prohibited in production mode. Use PostgreSQL.")
         _is_sqlite = True
         raw_path = db_url.replace("sqlite:///", "").replace("sqlite://", "")
         if not raw_path or raw_path == ":memory:":
@@ -296,7 +300,9 @@ def init_db(max_retries: int = 3, retry_delay: float = 0.5) -> None:
         if last_err:
             raise last_err
 
-    except ImportError:
+    except ImportError as e:
+        if settings.is_production:
+            raise RuntimeError("PostgreSQL driver (psycopg/psycopg_pool) is mandatory in production mode.") from e
         logger.warning("psycopg_pool not available; using SQLite.")
         _is_sqlite = True
         _sqlite_path = "file:agentic_test_shared?mode=memory&cache=shared"

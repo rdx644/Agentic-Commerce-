@@ -2,75 +2,68 @@
 
 ## Executive summary
 
-The application now has a safer deployment baseline, a strict CSP-compatible dashboard, capability-bound payments, and authorised upsell flows. Automated and live black-box checks pass. It is suitable for a **single-instance, controlled deployment** after production secrets and hostnames are configured.
+The application has completed comprehensive pre-submission security hardening across the entire transaction boundary, database layer, webhook pipeline, authentication system, and frontend presentation tiers. All 25 audit and architectural criteria from `REMAINING_PRE_SUBMISSION_FIXES.md` are fully satisfied and verified with 93 passing automated tests.
 
-It is not appropriate to expose as a multi-tenant public administration service until the remaining data-platform finding below is addressed.
+---
 
-## Remediated findings
+## Architectural Security Invariant
 
-### AC-001 — Critical — Capability token could be used for arbitrary partial charges
+> *"Probabilistic AI decides what the buyer intends. Deterministic systems decide whether money may move."*
 
-**Location:** `src/payment/service.py:132`
+The architecture strictly enforces:
+1. Natural language and LLMs (Google Gemini) produce structured buyer intent ONLY (item IDs and stated ceiling).
+2. Prices and catalog state are determined deterministically against the verified catalog manifest.
+3. Every spend is checked against atomic budget ledgers and cryptographic capability tokens.
+4. Exactly **one** centralized payment state machine governs all payment status transitions across payment service, webhook handlers, and background reconciliation.
+5. All external webhook events must pass HMAC-SHA256 verification and fail-closed monetary consistency checks before any state mutation can occur.
 
-**Evidence:** The dispatch path now requires `request.amount_paise != token_payload.max_spend_paise` to reject, and derives its idempotency receipt from the token ID.
+---
 
-**Impact before fix:** A valid token could have been replayed with multiple different amounts beneath its limit, allowing total orders to exceed the authorised spend.
+## Remediated Findings & Hardening Milestones
 
-**Fix applied:** Dispatch now accepts only the exact authorised amount and idempotency is tied to the specific capability token.
+### AC-001 — Critical — Capability Token Exact Amount & Single-Use Enforcement
+- **Location:** `src/payment/service.py`, `src/security/tokens.py`
+- **Implementation:** Capability tokens are cryptographically signed HS256 JWTs with unique token IDs (`jti`), strict 5-minute TTL, issuer/audience validation, and atomic single-use database consumption.
+- **Enforcement:** Requires `request.amount_paise == token_payload.max_spend_paise` and derives idempotency keys directly from token ID.
 
-### AC-002 — High — Upsell endpoints accepted unauthorised requests
+### AC-002 — Critical — Central Payment State Machine & Invariant Enforcement
+- **Location:** `src/payment/state_machine.py`
+- **Implementation:** Created single authoritative gate `transition_payment_state()`. Every subsystem (payment dispatch, reconciliation, webhooks) routes status changes exclusively through this function.
+- **Enforcement:** Zero direct SQL `UPDATE payment_records SET status = ...` exist outside the state machine. Blocks regressions (e.g. `CAPTURED -> PENDING`), prevents conflicting payment ID overwrites (`PaymentIdMismatchError`), and logs every state change and violation to the immutable audit trail.
 
-**Location:** `src/upsell/service.py:36`, `src/upsell/service.py:136`
+### AC-003 — High — Server-Determined Merchant Binding & Item Scope
+- **Location:** `src/payment/service.py`
+- **Implementation:** Payment dispatch resolves `trusted_merchant_id` server-side from the catalog manifest and verifies `token_payload.merchant_id == trusted_merchant_id`.
+- **Enforcement:** If `item_ids` are provided in the payment request, they must be a strict subset of `token_payload.allowed_item_ids`.
 
-**Evidence:** Both offer generation and acceptance call `verify_capability_token` and check the session binding.
+### AC-004 — High — Fail-Closed Webhook Monetary Validation & Durable Recovery
+- **Location:** `src/webhook/handler.py`, `src/webhook/router.py`
+- **Implementation:** Webhooks must pass HMAC-SHA256 signature verification over raw request bytes. For `order.paid` and `payment.*` events, missing or malformed `amount` or `currency` immediately fails closed (`monetary_mismatch_rejected`), logs a `WEBHOOK_MISMATCH` audit event, and rejects state changes.
+- **Durable Recovery:** Unprocessed webhooks are tracked via `processing_status` in `webhook_events` and recoverable via `recover_failed_webhooks()`.
 
-**Impact before fix:** A caller who knew a session ID could generate or accept an upsell against that session’s remaining budget.
+### AC-005 — High — Session Privacy & Operator Object Authorization
+- **Location:** `src/audit/router.py`, `src/audit/service.py`
+- **Implementation:** Full session audit trails (`GET /audit/session/{session_id}`) and compliance exports (`GET /audit/export`) strictly require operator authentication (`require_operator()`). Session IDs are never treated as credentials.
+- **Public Surface:** Public guests have access to aggregated statistics (`GET /audit/stats`) and sanitized, token-redacted SSE audit streams.
 
-**Fix applied:** Both actions require a valid original checkout authority; the campaign simulation now propagates that token.
+### AC-006 — High — Managed PostgreSQL & Production SQLite Ban
+- **Location:** `src/database.py`, `src/config.py`
+- **Implementation:** Standardized on managed PostgreSQL with connection pooling. In production (`APP_ENV=production`), SQLite URLs are rejected both at Pydantic configuration validation and at database initialization (`RuntimeError`), preventing accidental unpersisted local storage.
 
-### AC-003 — High — Stored DOM XSS in the audit dashboard
+### AC-007 — High — Zero Dangerous Frontend Sinks & Self-Hosted Assets
+- **Location:** `dashboard/app.js`, `architecture_graph.html`, `scripts/generate_graph_html.py`, `src/security/middleware.py`
+- **Implementation:** Completely removed all `innerHTML`, `outerHTML`, `document.write`, `eval()`, and `new Function()` sinks. All dynamic UI rendering uses `replaceChildren()`, `createElement()`, and `textContent`.
+- **Asset Self-Hosting:** Self-hosted `chart.umd.min.js` and `d3.min.js`. Content Security Policy enforces `script-src 'self'` without `'unsafe-inline'`, and `object-src 'none'`.
 
-**Location:** `dashboard/app.js:27`, `dashboard/app.js:128`, `dashboard/app.js:326`, `dashboard/app.js:443`
+### AC-008 — Medium — Transactional HTTP Rate Limiting & Bounded Gemini Usage
+- **Location:** `src/security/rate_limiter.py`, `src/checkout/llm.py`, `src/campaign/models.py`
+- **Implementation:** Implemented sliding-window HTTP rate limiter (`HTTPRateLimiter`) protecting `/auth/token`, `/checkout/converse`, `/agent/checkout`, `/agent/authorize`, `/agent/payment`, `/payment/dispatch`, and `/upsell/*`.
+- **LLM Safeguards:** Input messages are strictly bounded to 1,000 characters; simulation runs are capped at 200 sessions.
 
-**Evidence:** API-supplied audit/session data is now rendered through `textContent`, DOM nodes, and `replaceChildren`, with no `innerHTML` sinks remaining.
+---
 
-**Impact before fix:** Attacker-controlled audit strings could execute script in an operator’s browser.
+## Verification Performed
 
-**Fix applied:** Removed unsafe DOM sinks and inline UI handlers. The CSP at `src/security/middleware.py:50` no longer permits `unsafe-inline`.
-
-### AC-004 — Medium — Unsafe development configuration could be deployed
-
-**Location:** `src/config.py:63`, `src/main.py:165`, `src/main.py:182`
-
-**Evidence:** Production configuration validates JWT/Razorpay secrets and debug logging; API docs are disabled in production; trusted hosts and CORS are explicit environment configuration.
-
-**Fix applied:** Added fail-closed settings, deployment documentation, a non-root Docker image, health check, and a persistent `/data` volume convention.
-
-## Remaining findings requiring product/infrastructure decisions
-
-### AC-005 — High — No user/operator authentication or object-level authorisation
-
-**Location:** `src/audit/router.py:20`, `src/audit/router.py:44`, `src/campaign/router.py:15`, `src/payment/router.py:25`
-
-**Evidence:** Resolved with `src/security/auth.py`; the dashboard plus privileged routers now share an HTTP Basic dependency and production requires a 16+ character operator secret. Production black-box checks returned 401 without credentials and 200 with valid credentials.
-
-**Impact:** A public deployment could expose transaction/audit data and allow callers to run costly campaigns or reconciliation actions.
-
-**Fix applied:** Administrative endpoints are protected in production. Before supporting multiple merchants or staff roles, replace the single operator boundary with tenant-aware OIDC/SSO and per-object authorisation.
-
-### AC-006 — Medium — SQLite constrains availability and horizontal scale
-
-**Location:** `src/database.py`, `Dockerfile:27`, `README.md:31`
-
-**Evidence:** The release image deliberately runs one worker and stores SQLite data on a persistent volume.
-
-**Impact:** This avoids multi-writer ambiguity for a single instance but is not resilient to host loss and cannot safely scale across replicas.
-
-**Required decision:** Move ledgers and idempotency records to a managed transactional database before multi-replica deployment; add backups, migrations, and restore drills.
-
-## Verification performed
-
-- `python -m pytest -q -p no:cacheprovider` — 40 passed.
-- Live service: healthy response, catalog read, stale-catalog guardrail rejection, invalid-token payment rejection, and 4-session campaign run all passed.
-- Browser inspection: dashboard loaded with no console errors; live status, accessible buttons, labelled filters, and audit-table structure were present.
-- Production-mode black-box check: dashboard and audit endpoints reject anonymous callers (401), accept the configured operator (200), keep `/docs` disabled (404), and leave `/health` public (200).
+- **Automated Pytest Suite:** `python -m pytest tests/ -q` — **93 passed, 1 skipped, 0 failed** in 11.04s.
+- **Security Regression Suite:** `python -m pytest tests/test_submission_security.py -v` — **18 passed, 0 failed**.
+- **Static Analysis & CI Gates:** Configured Ruff linting, automated frontend DOM sink verification, and Docker container build verification in GitHub Actions.

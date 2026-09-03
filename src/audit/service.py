@@ -7,12 +7,43 @@ The audit trail is a real table, not app logs.
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Optional
 
 from src.database import get_db
 
 logger = logging.getLogger(__name__)
+
+
+def sanitize_audit_entry(entry: dict) -> dict:
+    """Sanitize internal or sensitive fields from audit logs for public observers."""
+    sanitized = {
+        "id": entry.get("id"),
+        "created_at": str(entry.get("created_at")),
+        "session_id": entry.get("session_id"),
+        "action": entry.get("action"),
+        "decision": entry.get("decision"),
+        "amount_paise": entry.get("amount_paise"),
+        "failure_class": entry.get("failure_class"),
+        "reason": entry.get("reason"),
+        "actor": entry.get("actor"),
+    }
+    if "metadata_json" in entry and entry["metadata_json"]:
+        try:
+            meta = json.loads(entry["metadata_json"]) if isinstance(entry["metadata_json"], str) else entry["metadata_json"]
+            safe_meta = {}
+            for k, v in meta.items():
+                if any(sec in k.lower() for sec in ("token", "jwt", "secret", "password", "key")):
+                    safe_meta[k] = "[REDACTED]"
+                elif isinstance(v, str) and len(v) > 200:
+                    safe_meta[k] = v[:200] + "..."
+                else:
+                    safe_meta[k] = v
+            sanitized["metadata"] = safe_meta
+        except Exception:
+            sanitized["metadata"] = {}
+    return sanitized
 
 
 def get_audit_trail(

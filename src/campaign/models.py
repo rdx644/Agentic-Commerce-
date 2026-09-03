@@ -12,7 +12,7 @@ class CampaignConfig(BaseModel):
     """Configuration for a campaign run."""
 
     campaign_id: Optional[str] = None
-    total_sessions: int = Field(default=50, ge=2)
+    total_sessions: int = Field(default=50, ge=2, le=200, description="Capped at 200 sessions to prevent resource exhaustion")
     min_budget_paise: int = Field(default=200000, description="Min session budget (₹2000)")
     max_budget_paise: int = Field(default=2000000, description="Max session budget (₹20000)")
     enable_upsell: bool = Field(default=True)

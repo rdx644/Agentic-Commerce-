@@ -713,6 +713,9 @@ async function openSessionDetail(sessionId) {
     try {
         const resp = await apiFetch(`/audit/session/${encodeURIComponent(sessionId)}`);
         if (!resp.ok) {
+            if (resp.status === 401) {
+                throw new Error("Operator authorization required to inspect private session provenance.");
+            }
             throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
         }
         const detail = await resp.json();

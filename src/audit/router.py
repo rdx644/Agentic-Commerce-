@@ -12,7 +12,7 @@ from fastapi.responses import StreamingResponse
 
 from src.audit import service as audit_service
 from src.database import get_db
-from src.security.auth import require_operator_optional, require_operator_or_ticket
+from src.security.auth import require_operator, require_operator_optional, require_operator_or_ticket
 
 router = APIRouter(prefix="/audit", tags=["audit"])
 
@@ -41,21 +41,31 @@ async def get_stats():
     return audit_service.get_audit_stats()
 
 
-@router.get("/session/{session_id}", summary="Session Detail", dependencies=[Depends(require_operator_optional)])
+@router.get("/session/{session_id}", summary="Session Detail", dependencies=[Depends(require_operator)])
 async def get_session(session_id: str):
-    """Full detail for a specific session — audit trail + budget + payments."""
+    """
+    Full detail for a specific session — audit trail + budget + payments.
+    Operator authorization strictly required (Section 3 & 23).
+    """
     return audit_service.get_session_detail(session_id)
+
+
+@router.get("/export", summary="Audit Export", dependencies=[Depends(require_operator)])
+async def export_audit(limit: int = Query(500, le=5000)):
+    """Export complete audit ledger for compliance review. Operator only."""
+    return audit_service.get_audit_trail(limit=limit)
 
 
 @router.get("/stream", summary="Real-time SSE Stream")
 async def stream_audit(auth_user: str = Depends(require_operator_or_ticket)):
     """
     Server-Sent Events stream of audit log entries.
-    Authenticated via single-use 30-second stream ticket or Authorization header.
+    Emits sanitized DTOs for public observers and complete payloads for operators.
     """
+    is_operator = (auth_user == "operator")
+
     async def event_generator():
         last_id = 0
-        # Get current max ID
         with get_db() as conn:
             row = conn.execute("SELECT MAX(id) as max_id FROM audit_log").fetchone()
             if row and row["max_id"]:
@@ -71,7 +81,8 @@ async def stream_audit(auth_user: str = Depends(require_operator_or_ticket)):
             for row in rows:
                 entry = dict(row)
                 last_id = entry["id"]
-                yield f"data: {json.dumps(entry, default=str)}\n\n"
+                payload = entry if is_operator else audit_service.sanitize_audit_entry(entry)
+                yield f"data: {json.dumps(payload, default=str)}\n\n"
 
             # Also send stats periodically
             if not rows:

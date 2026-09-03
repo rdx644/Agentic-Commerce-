@@ -32,6 +32,20 @@ jobs:
         run: |
           ruff check src tests --select E9,F63,F7,F82
 
+      - name: Verify Zero Dangerous Frontend Sinks
+        run: |
+          python -c "
+          app_js = open('dashboard/app.js', encoding='utf-8').read()
+          arch_html = open('architecture_graph.html', encoding='utf-8').read()
+          gen_py = open('scripts/generate_graph_html.py', encoding='utf-8').read()
+          sinks = ['innerHTML', 'outerHTML', 'insertAdjacentHTML', 'document.write', 'eval(']
+          for f_name, content in [('dashboard/app.js', app_js), ('architecture_graph.html', arch_html), ('scripts/generate_graph_html.py', gen_py)]:
+              for s in sinks:
+                  if s in content:
+                      raise SystemExit(f'Dangerous sink {s} found in {f_name}')
+          print('Frontend sinks check: PASSED (Zero dangerous sinks)')
+          "
+
   test:
     name: Run Test Suite
     runs-on: ubuntu-latest

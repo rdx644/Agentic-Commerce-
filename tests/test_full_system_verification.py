@@ -118,7 +118,7 @@ def test_public_guest_audit_transparency(client):
     assert trail_resp.status_code == 200
     assert isinstance(trail_resp.json(), list)
 
-    # 3. Session Deep Dive (Public Inspection for judges)
+    # 3. Session Deep Dive (Protected by Operator Authentication)
     # Run a test checkout to create a session
     sess_id = "test-session-verify-001"
     client.post(
@@ -126,8 +126,16 @@ def test_public_guest_audit_transparency(client):
         json={"session_id": sess_id, "message": "Buy 1 Quantum X Pro with budget 70000 rupees"}
     )
 
-    # Query session detail without auth headers
-    sess_resp = client.get(f"/audit/session/{sess_id}")
+    # Anonymous access must be rejected with 401 (Section 3: session ID is not a credential)
+    unauth_resp = client.get(f"/audit/session/{sess_id}")
+    assert unauth_resp.status_code == 401
+
+    # Authenticated operator access succeeds
+    token = client.post(
+        "/auth/token",
+        data={"username": get_settings().operator_username, "password": get_settings().operator_password}
+    ).json()["access_token"]
+    sess_resp = client.get(f"/audit/session/{sess_id}", headers={"Authorization": f"Bearer {token}"})
     assert sess_resp.status_code == 200
     sess_data = sess_resp.json()
     assert sess_data["session_id"] == sess_id

@@ -25,6 +25,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from src.config import get_settings
+from src.security.rate_limiter import rate_limit_endpoint
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -55,7 +56,7 @@ def create_access_token(data: dict, expires_delta: timedelta) -> str:
     return encoded_jwt
 
 
-@router.post("/token", summary="Operator Login")
+@router.post("/token", summary="Operator Login", dependencies=[Depends(rate_limit_endpoint)])
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     settings = get_settings()
 

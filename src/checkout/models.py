@@ -9,6 +9,9 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
+from src.payment.models import MAX_PAYMENT_PAISE
+
+
 class CheckoutRequest(BaseModel):
     """Incoming checkout request from user/agent."""
 
@@ -16,7 +19,7 @@ class CheckoutRequest(BaseModel):
         ...,
         description="Natural language checkout message",
         min_length=1,
-        max_length=2000,
+        max_length=1000,
     )
     session_id: str = Field(
         ...,
@@ -29,7 +32,7 @@ class CheckoutRequest(BaseModel):
         default=None,
         description="Optional explicit budget. If not set, extracted from message.",
         gt=0,
-        le=10_000_000,  # Max ₹1 lakh
+        le=MAX_PAYMENT_PAISE,
     )
 
 

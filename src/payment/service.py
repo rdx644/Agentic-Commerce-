@@ -23,6 +23,8 @@ from src.database import get_db, get_db_transaction
 from src.guardrail.models import FailureClass
 from src.payment.models import PaymentDispatchRequest, PaymentDispatchResponse
 from src.security.tokens import verify_capability_token, consume_capability_token
+from src.payment.state_machine import transition_payment_state
+from src.catalog import service as catalog_service
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +148,43 @@ def dispatch_payment(request: PaymentDispatchRequest) -> PaymentDispatchResponse
             message="Payment amount must exactly match the capability token authorisation.",
         )
 
+    # ── Step 1b: Explicit Merchant Binding Validation ─────────────────────
+    try:
+        trusted_merchant_id = catalog_service.get_manifest().merchant_id
+    except ValueError:
+        trusted_merchant_id = "merchant_demo_001"
+    if token_payload.merchant_id != trusted_merchant_id:
+        _log_payment_action(
+            session_id, "PAYMENT_DISPATCH",
+            failure_class=FailureClass.TOKEN_INVALID,
+            reason=f"Merchant binding mismatch: token={token_payload.merchant_id}, trusted={trusted_merchant_id}",
+            amount_paise=request.amount_paise,
+        )
+        return PaymentDispatchResponse(
+            session_id=session_id,
+            success=False,
+            status="REJECTED",
+            message="Merchant binding mismatch: capability token does not authorize payment to this merchant.",
+        )
+
+    # ── Step 1c: Item Scope Enforcement ───────────────────────────────────
+    if request.item_ids:
+        allowed_items = set(token_payload.allowed_item_ids)
+        requested_items = set(request.item_ids)
+        if not requested_items.issubset(allowed_items):
+            _log_payment_action(
+                session_id, "PAYMENT_DISPATCH",
+                failure_class=FailureClass.TOKEN_INVALID,
+                reason=f"Item scope violation: requested {requested_items} not subset of allowed {allowed_items}",
+                amount_paise=request.amount_paise,
+            )
+            return PaymentDispatchResponse(
+                session_id=session_id,
+                success=False,
+                status="REJECTED",
+                message="Item scope mismatch: requested items exceed authorized capability scope.",
+            )
+
     # ── Step 2: Generate idempotency key ──────────────────────────────────
     idempotency_key = _generate_idempotency_key(session_id, token_payload.token_id)
 
@@ -220,16 +259,23 @@ def dispatch_payment(request: PaymentDispatchRequest) -> PaymentDispatchResponse
 
         razorpay_order_id = order["id"]
 
-        # Update our record with Razorpay's order ID
-        with get_db_transaction() as conn:
-            conn.execute(
-                """
-                UPDATE payment_records
-                SET razorpay_order_id = %s, status = 'CREATED', attempts = attempts + 1,
-                    updated_at = NOW()
-                WHERE idempotency_key = %s
-                """,
-                (razorpay_order_id, idempotency_key),
+        # Fetch local record ID
+        with get_db() as conn:
+            row = conn.execute(
+                "SELECT id FROM payment_records WHERE idempotency_key = %s",
+                (idempotency_key,),
+            ).fetchone()
+        rec_id = row["id"] if row else None
+
+        # Authoritative state transition to CREATED
+        if rec_id:
+            transition_payment_state(
+                payment_record_id=rec_id,
+                new_status="CREATED",
+                razorpay_order_id=razorpay_order_id,
+                actor="payment_service",
+                reason=f"Order created: {razorpay_order_id}",
+                increment_attempts=True,
             )
 
         _log_payment_action(
@@ -245,13 +291,6 @@ def dispatch_payment(request: PaymentDispatchRequest) -> PaymentDispatchResponse
             razorpay_order_id, session_id, request.amount_paise,
         )
 
-        # Get the payment_record_id
-        with get_db() as conn:
-            row = conn.execute(
-                "SELECT id FROM payment_records WHERE idempotency_key = %s",
-                (idempotency_key,),
-            ).fetchone()
-
         return PaymentDispatchResponse(
             session_id=session_id,
             success=True,
@@ -261,7 +300,7 @@ def dispatch_payment(request: PaymentDispatchRequest) -> PaymentDispatchResponse
             currency=request.currency,
             status="CREATED",
             message=f"Order {razorpay_order_id} created successfully.",
-            payment_record_id=row["id"] if row else None,
+            payment_record_id=rec_id,
         )
 
     except razorpay.errors.BadRequestError as e:
@@ -285,20 +324,26 @@ def dispatch_payment(request: PaymentDispatchRequest) -> PaymentDispatchResponse
                 message="Idempotent: order already exists on Razorpay.",
             )
 
+        with get_db() as conn:
+            row = conn.execute(
+                "SELECT id FROM payment_records WHERE idempotency_key = %s",
+                (idempotency_key,),
+            ).fetchone()
+        rec_id = row["id"] if row else None
+
         # Explicit simulation mode (must be disabled in production)
         settings = get_settings()
         if settings.payment_simulation_enabled:
             logger.info("Simulated test-mode order for dummy keys: %s", idempotency_key)
             sim_order_id = f"order_sim_{idempotency_key[:16]}"
-            with get_db_transaction() as conn:
-                conn.execute(
-                    """
-                    UPDATE payment_records
-                    SET razorpay_order_id = %s, status = 'CREATED', attempts = attempts + 1,
-                        updated_at = NOW()
-                    WHERE idempotency_key = %s
-                    """,
-                    (sim_order_id, idempotency_key),
+            if rec_id:
+                transition_payment_state(
+                    payment_record_id=rec_id,
+                    new_status="CREATED",
+                    razorpay_order_id=sim_order_id,
+                    actor="payment_service",
+                    reason=f"Simulated test order created: {sim_order_id}",
+                    increment_attempts=True,
                 )
             _log_payment_action(
                 session_id, "PAYMENT_DISPATCH",
@@ -307,11 +352,6 @@ def dispatch_payment(request: PaymentDispatchRequest) -> PaymentDispatchResponse
                 reason=f"Simulated test order created: {sim_order_id}",
                 metadata={"idempotency_key": idempotency_key, "simulated": True},
             )
-            with get_db() as conn:
-                row = conn.execute(
-                    "SELECT id FROM payment_records WHERE idempotency_key = %s",
-                    (idempotency_key,),
-                ).fetchone()
 
             return PaymentDispatchResponse(
                 session_id=session_id,
@@ -322,19 +362,18 @@ def dispatch_payment(request: PaymentDispatchRequest) -> PaymentDispatchResponse
                 currency=request.currency,
                 status="CREATED",
                 message=f"Order {sim_order_id} created successfully (test-mode).",
-                payment_record_id=row["id"] if row else None,
+                payment_record_id=rec_id,
             )
 
         logger.error("Razorpay BadRequestError: %s", error_msg)
-        with get_db_transaction() as conn:
-            conn.execute(
-                """
-                UPDATE payment_records
-                SET status = 'FAILED', last_error = %s, attempts = attempts + 1,
-                    updated_at = NOW()
-                WHERE idempotency_key = %s
-                """,
-                (error_msg, idempotency_key),
+        if rec_id:
+            transition_payment_state(
+                payment_record_id=rec_id,
+                new_status="FAILED",
+                error=error_msg,
+                actor="payment_service",
+                reason=f"Razorpay gateway rejection: {error_msg}",
+                increment_attempts=True,
             )
         _log_payment_action(
             session_id, "PAYMENT_DISPATCH",
@@ -356,15 +395,20 @@ def dispatch_payment(request: PaymentDispatchRequest) -> PaymentDispatchResponse
     except Exception as e:
         # Network or unexpected error
         logger.error("Razorpay API error: %s", e)
-        with get_db_transaction() as conn:
-            conn.execute(
-                """
-                UPDATE payment_records
-                SET status = 'FAILED', last_error = %s, attempts = attempts + 1,
-                    updated_at = NOW()
-                WHERE idempotency_key = %s
-                """,
-                (str(e), idempotency_key),
+        with get_db() as conn:
+            row = conn.execute(
+                "SELECT id FROM payment_records WHERE idempotency_key = %s",
+                (idempotency_key,),
+            ).fetchone()
+        rec_id = row["id"] if row else None
+        if rec_id:
+            transition_payment_state(
+                payment_record_id=rec_id,
+                new_status="FAILED",
+                error=str(e),
+                actor="payment_service",
+                reason=f"Razorpay API error: {e}",
+                increment_attempts=True,
             )
 
         _log_payment_action(

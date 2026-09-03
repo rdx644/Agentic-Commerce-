@@ -10,11 +10,17 @@ from src.payment.models import PaymentDispatchRequest, PaymentDispatchResponse, 
 from src.payment import service as payment_service
 from src.payment import reconciliation
 from src.security.auth import require_operator
+from src.security.rate_limiter import rate_limit_endpoint
 
 router = APIRouter(prefix="/payment", tags=["payment"])
 
 
-@router.post("/dispatch", response_model=PaymentDispatchResponse, summary="Dispatch Payment")
+@router.post(
+    "/dispatch",
+    response_model=PaymentDispatchResponse,
+    summary="Dispatch Payment",
+    dependencies=[Depends(rate_limit_endpoint)],
+)
 async def dispatch(request: PaymentDispatchRequest):
     """
     Dispatch payment to Razorpay. Requires a valid capability token

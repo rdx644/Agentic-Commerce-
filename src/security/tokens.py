@@ -151,6 +151,9 @@ def verify_capability_token(token: str) -> Optional[TokenPayload]:
     except jwt.InvalidTokenError as e:
         logger.warning("Capability token invalid: %s", e)
         return None
+    except (KeyError, ValueError) as e:
+        logger.warning("Capability token missing required claims: %s", e)
+        return None
 
 
 def consume_capability_token(token_id: str) -> bool:

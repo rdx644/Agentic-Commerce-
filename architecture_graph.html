@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Agentic Commerce - Architecture Graph</title>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="/dashboard/static/d3.min.js"></script>
     <style>
         body { margin: 0; background: #0a0a0f; color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; }
         svg { width: 100vw; height: 100vh; }
@@ -95,19 +95,51 @@
             const importedBy = connectedLinks.filter(l => l.target.id === d.id && l.type === 'IMPORTS').map(l => l.source.name);
             const imports = connectedLinks.filter(l => l.source.id === d.id && l.type === 'IMPORTS').map(l => l.target.name);
             
-            let html = `<strong>${d.name}</strong><br/><span style="color:#8888a0;font-size:11px">${d.type.toUpperCase()}</span><br/><br/>`;
-            html += `<div style="font-size:11px;word-wrap:break-word;">${d.id}</div>`;
-            
-            if (imports.length > 0) html += `<br/><strong>Imports:</strong> ${imports.join(', ')}`;
-            if (importedBy.length > 0) html += `<br/><strong>Imported by:</strong> ${importedBy.join(', ')}`;
-            
-            document.getElementById("selected-node").innerHTML = html;
+            const container = document.getElementById("selected-node");
+            const frag = document.createDocumentFragment();
+
+            const title = document.createElement("strong");
+            title.textContent = d.name;
+            frag.appendChild(title);
+            frag.appendChild(document.createElement("br"));
+
+            const typeSpan = document.createElement("span");
+            typeSpan.style.color = "#8888a0";
+            typeSpan.style.fontSize = "11px";
+            typeSpan.textContent = d.type.toUpperCase();
+            frag.appendChild(typeSpan);
+            frag.appendChild(document.createElement("br"));
+            frag.appendChild(document.createElement("br"));
+
+            const idDiv = document.createElement("div");
+            idDiv.style.fontSize = "11px";
+            idDiv.style.wordWrap = "break-word";
+            idDiv.textContent = d.id;
+            frag.appendChild(idDiv);
+
+            if (imports.length > 0) {
+                frag.appendChild(document.createElement("br"));
+                const impStrong = document.createElement("strong");
+                impStrong.textContent = "Imports: ";
+                frag.appendChild(impStrong);
+                frag.appendChild(document.createTextNode(imports.join(", ")));
+            }
+
+            if (importedBy.length > 0) {
+                frag.appendChild(document.createElement("br"));
+                const impByStrong = document.createElement("strong");
+                impByStrong.textContent = "Imported by: ";
+                frag.appendChild(impByStrong);
+                frag.appendChild(document.createTextNode(importedBy.join(", ")));
+            }
+
+            container.replaceChildren(frag);
         })
         .on("mouseout", function(event, d) {
             if (d.group !== 1) {
                 d3.select(this).select("text").style("display", "none");
             }
-            document.getElementById("selected-node").innerHTML = "Hover over a node to see details.";
+            document.getElementById("selected-node").textContent = "Hover over a node to see details.";
         });
 
         simulation.on("tick", () => {

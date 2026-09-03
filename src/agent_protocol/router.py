@@ -15,7 +15,7 @@ import logging
 import uuid
 from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 
 from src.catalog import service as catalog_service
 from src.guardrail import service as guardrail_service
@@ -23,6 +23,7 @@ from src.guardrail.models import CartItem, Decision, SpendIntent
 from src.payment import service as payment_service
 from src.payment.models import PaymentDispatchRequest
 from src.config import get_settings
+from src.security.rate_limiter import rate_limit_endpoint
 
 logger = logging.getLogger(__name__)
 
@@ -38,12 +39,15 @@ class AgentItemRequest(BaseModel):
     quantity: int = Field(default=1, ge=1, le=100, description="Quantity bounded to 1-100 units")
 
 
+from src.payment.models import MAX_PAYMENT_PAISE
+
+
 class AgentCheckoutRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     session_id: Optional[str] = Field(None, max_length=128)
     items: List[AgentItemRequest] = Field(..., min_length=1, max_length=50, description="List of items (1-50)")
-    max_budget_paise: int = Field(..., gt=0, le=1_000_000_000, description="Strict spending ceiling in paise (₹1 = 100 paise)")
+    max_budget_paise: int = Field(..., gt=0, le=MAX_PAYMENT_PAISE, description="Strict spending ceiling in paise (₹1 = 100 paise)")
     catalog_hash: Optional[str] = Field(None, max_length=128)
     agent_identity: Optional[str] = Field("autonomous_ai_buyer", max_length=128)
 
@@ -53,7 +57,7 @@ class AgentAuthorizeRequest(BaseModel):
 
     session_id: str = Field(..., min_length=1, max_length=128)
     items: List[AgentItemRequest] = Field(..., min_length=1, max_length=50)
-    max_budget_paise: int = Field(..., gt=0, le=1_000_000_000)
+    max_budget_paise: int = Field(..., gt=0, le=MAX_PAYMENT_PAISE)
 
 
 class AgentPaymentRequest(BaseModel):
@@ -61,7 +65,8 @@ class AgentPaymentRequest(BaseModel):
 
     session_id: str = Field(..., min_length=1, max_length=128)
     capability_token: str = Field(..., min_length=16, description="Cryptographic single-use capability token")
-    amount_paise: int = Field(..., gt=0, le=1_000_000_000)
+    amount_paise: int = Field(..., gt=0, le=MAX_PAYMENT_PAISE)
+    item_ids: Optional[List[str]] = Field(None, max_length=50, description="Optional items to verify against capability scope")
 
 
 # ── Discovery Endpoints ───────────────────────────────────────────────────────
@@ -108,7 +113,7 @@ async def get_agent_manifest():
             "enforcement": "strict_bounded_numeric",
             "capability_token_ttl_seconds": settings.capability_token_ttl_seconds,
             "max_consecutive_rejections": settings.max_consecutive_rejections,
-            "audit_trail": "sha256_chained",
+            "audit_trail": "append_only_ledger_verified",
         },
     }
 
@@ -158,7 +163,7 @@ async def get_agent_catalog():
 
 # ── Programmatic Agent Checkout ───────────────────────────────────────────────
 
-@router.post("/agent/checkout", summary="Autonomous Agent Checkout")
+@router.post("/agent/checkout", summary="Autonomous Agent Checkout", dependencies=[Depends(rate_limit_endpoint)])
 async def agent_checkout(req: AgentCheckoutRequest):
     """
     Structured checkout interface for AI buyers.
@@ -217,7 +222,7 @@ async def agent_checkout(req: AgentCheckoutRequest):
 
 # ── Agent Capability Token Authorization ──────────────────────────────────────
 
-@router.post("/agent/authorize", summary="Mint Agent Capability Token")
+@router.post("/agent/authorize", summary="Mint Agent Capability Token", dependencies=[Depends(rate_limit_endpoint)])
 async def agent_authorize(req: AgentAuthorizeRequest):
     """
     Directly mints a signed capability token for an agent session after guardrail checks.
@@ -254,7 +259,7 @@ async def agent_authorize(req: AgentAuthorizeRequest):
 
 # ── Agent Settlement ──────────────────────────────────────────────────────────
 
-@router.post("/agent/payment", summary="Agent Payment Settlement")
+@router.post("/agent/payment", summary="Agent Payment Settlement", dependencies=[Depends(rate_limit_endpoint)])
 async def agent_payment(req: AgentPaymentRequest):
     """
     Executes payment settlement for an AI agent using a valid Capability Token.
@@ -264,6 +269,7 @@ async def agent_payment(req: AgentPaymentRequest):
         session_id=req.session_id,
         capability_token=req.capability_token,
         amount_paise=req.amount_paise,
+        item_ids=req.item_ids,
     )
 
     resp = payment_service.dispatch_payment(payment_req)
