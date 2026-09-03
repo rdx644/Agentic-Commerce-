@@ -461,17 +461,26 @@ python scripts/test_razorpay_live.py
 
 The Architectural Blueprint dashboard provides real-time visibility into autonomous transactions with zero-latency telemetry:
 
-### 🔑 Operator Access & Credentials
+### 🔑 Demo Operator Credentials (For Evaluators & Judges)
 For evaluators, judges, and reviewers accessing the live deployed dashboard:
 
-| Field | Configuration |
-| :--- | :--- |
-| **Username** | Injected via `OPERATOR_USERNAME` environment variable (default: `Razorpay`) |
-| **Password** | Injected via `OPERATOR_PASSWORD` environment variable (configured securely in Render deployment) |
+| Field | Demo Value | Description |
+| :--- | :--- | :--- |
+| **Username** | `Razorpay` | Operator administrative account |
+| **Password** | `RazorPay@123456#` | Configured securely in Render cloud deployment (16+ chars, uppercase, digits & symbols) |
+
+> **Evaluator 1-Click Walkthrough**:
+> 1. Open the live dashboard: **[https://agentic-commerce-zyoy.onrender.com/dashboard](https://agentic-commerce-zyoy.onrender.com/dashboard)**.
+> 2. By default, the interface loads in **`👁️ GUEST OBSERVER`** mode allowing public aggregate stats inspection, live telemetry, and checkout simulation.
+> 3. Click the **`🔑 OPERATOR LOGIN`** button in the top right corner.
+> 4. Enter Username: `Razorpay` and Password: `RazorPay@123456#` to authenticate.
+> 5. **Inspect Session Deep Dive**: Click any row in the **Live Audit Trail** table to view the full cryptographic provenance timeline, budget state, and payment records for that session.
+> 6. **Run Campaign**: Click **`🚀 RUN CAMPAIGN`** to trigger a 50-trial Monte Carlo A/B conversion simulation with real-time Chart.js visual telemetry.
+> 7. **Interactive Blueprint**: Visit **[https://agentic-commerce-zyoy.onrender.com/graph](https://agentic-commerce-zyoy.onrender.com/graph)** to inspect the force-directed D3 system topology.
 
 * **Live Dashboard URL**: **[https://agentic-commerce-zyoy.onrender.com/dashboard](https://agentic-commerce-zyoy.onrender.com/dashboard)**
 * **Live Architecture Graph**: **[https://agentic-commerce-zyoy.onrender.com/graph](https://agentic-commerce-zyoy.onrender.com/graph)**
-* **Dual-Mode Header**: Starts in `👁️ GUEST OBSERVER` mode for instant inspection; switches to `🛡️ OPERATOR` on 1-click login.
+* **Dual-Mode Header**: Starts in `👁️ GUEST OBSERVER` mode for instant inspection; switches to `🛡️ OPERATOR` on login.
 * **Virtualized Audit Trail**: 48px row virtualization rendering smooth 120fps scrolling across 1,000+ continuous events.
 * **Interactive Checkout Simulator**: 4 one-click test chips (`⚡ Pass`, `⚡ Multi-Qty`, `⚡ Reject`, `⚡ Multi-Item`) for instant evaluation.
 * **Monte Carlo Campaign Analytics**: Empirical 95% Confidence Intervals, Standard Deviation ($\sigma$), and Basket Lift tracking.
