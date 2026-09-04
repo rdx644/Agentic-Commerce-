@@ -70,7 +70,7 @@ To balance **zero-friction evaluator accessibility** with **strict enterprise le
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│  GUEST OBSERVER MODE (Default on Page Load)                                         │
+│  GUEST OBSERVER MODE (Default on Page Load)                                            │
 │ • Audience: Hackathon Judges, Public Auditors, External Consumers                      │
 │ • Auth Barrier: None (Immediate Public Visibility)                                     │
 │ • Available: Live Aggregated Stats (/audit/stats), Sanitized Real-time SSE Stream,     │
@@ -81,12 +81,12 @@ To balance **zero-friction evaluator accessibility** with **strict enterprise le
                         (Configured via Server Environment)
                                             ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│  AUTHENTICATED OPERATOR MODE                                                        │
+│  AUTHENTICATED OPERATOR MODE                                                           │
 │ • Audience: Store Managers, Finance Engineers, Compliance Auditors                     │
-│ • Auth Barrier: OAuth2-style password authentication issuing HS256-signed bearer JWTs │
-│ • Available: Full Session Deep Dives (/audit/session/{id}), Compliance Data Exports,    │
+│ • Auth Barrier: OAuth2-style password authentication issuing HS256-signed bearer JWTs  │
+│ • Available: Full Session Deep Dives (/audit/session/{id}), Compliance Data Exports,   │
 │   50-Trial Monte Carlo Campaign Simulation, Payment Reconciliation, DLQ Sweeps.        │
-│ • Session Lifecycle: Terminated instantly on tab closure or by clicking [ LOGOUT].  │
+│ • Session Lifecycle: Terminated instantly on tab closure or by clicking [ LOGOUT].     │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
