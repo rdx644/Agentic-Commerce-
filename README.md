@@ -1,4 +1,4 @@
-# 📐 Agentic Commerce
+#  Agentic Commerce
 
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
@@ -15,16 +15,16 @@ An enterprise-grade, mathematically bounded, explainable **Agentic Checkout & Pa
 > **Core Architectural Invariant**:  
 > *"Probabilistic AI decides what the buyer intends. Deterministic systems decide whether money may move."*
 
-### 🌐 Live Deployment & Interactive Endpoints
-* 🚀 **Live Audit Blueprint Dashboard**: **[https://agentic-commerce-zyoy.onrender.com/dashboard](https://agentic-commerce-zyoy.onrender.com/dashboard)**
-* 🕸️ **Interactive System Architecture Graph**: **[https://agentic-commerce-zyoy.onrender.com/graph](https://agentic-commerce-zyoy.onrender.com/graph)**
-* 📖 **Interactive OpenAPI Documentation**: Available in local/non-production mode (`http://localhost:8000/docs`); disabled in production.
-* 🤖 **Agent Protocol Discovery Manifest**: **[https://agentic-commerce-zyoy.onrender.com/.well-known/agent.json](https://agentic-commerce-zyoy.onrender.com/.well-known/agent.json)**
-* 🔑 **Evaluator Credentials**: `Razorpay` / `RazorPay@123456#` *(Demo-only evaluator credentials — not production secrets.)*
+###  Live Deployment & Interactive Endpoints
+*  **Live Audit Blueprint Dashboard**: **[https://agentic-commerce-zyoy.onrender.com/dashboard](https://agentic-commerce-zyoy.onrender.com/dashboard)**
+*  **Interactive System Architecture Graph**: **[https://agentic-commerce-zyoy.onrender.com/graph](https://agentic-commerce-zyoy.onrender.com/graph)**
+*  **Interactive OpenAPI Documentation**: Available in local/non-production mode (`http://localhost:8000/docs`); disabled in production.
+*  **Agent Protocol Discovery Manifest**: **[https://agentic-commerce-zyoy.onrender.com/.well-known/agent.json](https://agentic-commerce-zyoy.onrender.com/.well-known/agent.json)**
+*  **Evaluator Credentials**: `Razorpay` / `RazorPay@123456#` *(Demo-only evaluator credentials — not production secrets.)*
 
 ---
 
-## 📌 Table of Contents
+##  Table of Contents
 
 - [About the Project](#-about-the-project)
 - [Dual-Mode Security Architecture](#-dual-mode-security-architecture)
@@ -48,7 +48,7 @@ An enterprise-grade, mathematically bounded, explainable **Agentic Checkout & Pa
 
 ---
 
-## 📖 About the Project
+##  About the Project
 
 > **Production Scope**: Designed as a controlled single-merchant agentic-commerce demonstration, not a multi-tenant payment platform.
 
@@ -64,35 +64,35 @@ An enterprise-grade, mathematically bounded, explainable **Agentic Checkout & Pa
 
 ---
 
-## 🛡️ Dual-Mode Security Architecture
+##  Dual-Mode Security Architecture
 
 To balance **zero-friction evaluator accessibility** with **strict enterprise least-privilege security**, the system operates with a dual-tier authentication model:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ 👁️ GUEST OBSERVER MODE (Default on Page Load)                                         │
+│  GUEST OBSERVER MODE (Default on Page Load)                                         │
 │ • Audience: Hackathon Judges, Public Auditors, External Consumers                      │
 │ • Auth Barrier: None (Immediate Public Visibility)                                     │
 │ • Available: Live Aggregated Stats (/audit/stats), Sanitized Real-time SSE Stream,     │
 │   Public Catalog Manifest, Interactive Blueprint Graph (/graph), Checkout Simulator.   │
 │ • Protected Actions: Full Session Deep Dives and Raw Compliance Exports require login. │
 └───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                  [🔑 Operator Login]
+                                  [ Operator Login]
                         (Configured via Server Environment)
                                             ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ 🛡️ AUTHENTICATED OPERATOR MODE                                                        │
+│  AUTHENTICATED OPERATOR MODE                                                        │
 │ • Audience: Store Managers, Finance Engineers, Compliance Auditors                     │
 │ • Auth Barrier: OAuth2-style password authentication issuing HS256-signed bearer JWTs │
 │ • Available: Full Session Deep Dives (/audit/session/{id}), Compliance Data Exports,    │
 │   50-Trial Monte Carlo Campaign Simulation, Payment Reconciliation, DLQ Sweeps.        │
-│ • Session Lifecycle: Terminated instantly on tab closure or by clicking [🚪 LOGOUT].  │
+│ • Session Lifecycle: Terminated instantly on tab closure or by clicking [ LOGOUT].  │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🏛️ Core Architecture & Mathematical Invariants
+##  Core Architecture & Mathematical Invariants
 
 ```
                      ┌───────────────────────────────┐
@@ -159,7 +159,7 @@ To balance **zero-friction evaluator accessibility** with **strict enterprise le
 
 ---
 
-## 🤖 Protocol-Native Agent Interface (AI Buyer)
+##  Protocol-Native Agent Interface (AI Buyer)
 
 Agent-native interfaces aligned with emerging agent-commerce protocols including UAP/ACP/AP2/x402/UCP:
 
@@ -174,20 +174,20 @@ Agent-native interfaces aligned with emerging agent-commerce protocols including
 
 ---
 
-## ⚡ Interactive Checkout Simulator
+##  Interactive Checkout Simulator
 
 The dashboard incorporates a live **Conversational Checkout Simulator** connected to Gemini 2.0 Flash and the deterministic catalog engine:
 
 | Preset Chip | User Prompt | Guardrail Decision | Pipeline Outcome |
 | :--- | :--- | :---: | :--- |
-| `⚡ Pass: 1x Quantum X Pro` | `"Buy 1 Quantum X Pro with budget 70000 rupees"` | `PASS` | Evaluates price (₹59,999) $\le$ budget (₹70,000); mints capability token and dispatches payment order. |
-| `⚡ Multi-Qty: 2x SoundPods` | `"I want to buy 2 SoundPods Pro with budget 15000"` | `PASS` | Evaluates total price ($2 \times ₹5,999 = ₹11,998$) $\le$ ₹15,000; mints capability token. |
-| `⚡ Reject: Budget Exceeded` | `"Buy Quantum X Pro with budget 10000"` | `REJECT` | Detects item price (₹59,999) > budget (₹10,000); blocks spend, records failure class `budget_exceeded`. |
-| `⚡ Multi-Item: Phone+Charger`| `"Buy 1 NeoLite 5G and 1 TurboCharge 65W with budget 25000"`| `PASS` | Parses multi-item bundle ($₹19,999 + ₹1,999 = ₹21,998$) $\le$ ₹25,000; mints capability token. |
+| ` Pass: 1x Quantum X Pro` | `"Buy 1 Quantum X Pro with budget 70000 rupees"` | `PASS` | Evaluates price (₹59,999) $\le$ budget (₹70,000); mints capability token and dispatches payment order. |
+| ` Multi-Qty: 2x SoundPods` | `"I want to buy 2 SoundPods Pro with budget 15000"` | `PASS` | Evaluates total price ($2 \times ₹5,999 = ₹11,998$) $\le$ ₹15,000; mints capability token. |
+| ` Reject: Budget Exceeded` | `"Buy Quantum X Pro with budget 10000"` | `REJECT` | Detects item price (₹59,999) > budget (₹10,000); blocks spend, records failure class `budget_exceeded`. |
+| ` Multi-Item: Phone+Charger`| `"Buy 1 NeoLite 5G and 1 TurboCharge 65W with budget 25000"`| `PASS` | Parses multi-item bundle ($₹19,999 + ₹1,999 = ₹21,998$) $\le$ ₹25,000; mints capability token. |
 
 ---
 
-## 🗺️ Interactive Architecture Blueprint Graph
+##  Interactive Architecture Blueprint Graph
 
 The full architectural blueprint is served as an interactive, force-directed graph visualization powered by local D3.js:
 
@@ -198,7 +198,7 @@ The full architectural blueprint is served as an interactive, force-directed gra
 
 ---
 
-## ⚡ High-Concurrency Stress Verification
+##  High-Concurrency Stress Verification
 
 The system includes dedicated multi-threaded concurrency stress tests (`tests/test_concurrency.py`) to verify financial and ledger invariants under heavy transaction contention:
 
@@ -214,7 +214,7 @@ The system includes dedicated multi-threaded concurrency stress tests (`tests/te
 
 ---
 
-## 📈 Multi-Trial Monte Carlo Uplift Modeling
+##  Multi-Trial Monte Carlo Uplift Modeling
 
 To simulate potential merchant uplift under defined assumptions with statistical rigor, the Campaign Orchestrator (`src/campaign/orchestrator.py`) runs **multi-trial Monte Carlo A/B simulations** with dynamic consumer price elasticity.
 
@@ -241,7 +241,7 @@ For every campaign simulation run across baseline and agentic cohorts, $K$ indep
 
 ---
 
-## ⚡ Tech Stack & Decision Framework
+##  Tech Stack & Decision Framework
 
 | Layer | Technology | Rationale & Architectural Decisions |
 | :--- | :--- | :--- |
@@ -256,7 +256,7 @@ For every campaign simulation run across baseline and agentic cohorts, $K$ indep
 
 ---
 
-## 📁 Project Directory Structure
+##  Project Directory Structure
 
 ```text
 agentic-commerce/
@@ -318,7 +318,7 @@ agentic-commerce/
 
 ---
 
-## 🚀 Quick Start Guide
+##  Quick Start Guide
 
 ### Prerequisites
 * **Python 3.11+**
@@ -385,7 +385,7 @@ chmod +x scripts/deploy.sh
 
 ---
 
-## 🔒 Security & Production Hardening
+##  Security & Production Hardening
 
 * **Central Payment State Machine**: All payment-status transitions route through `transition_payment_state()`. Zero direct SQL `UPDATE payment_records SET status = ...` exist repository-wide. Terminal states (`CAPTURED`, `FAILED`, `DEAD_LETTER`) cannot regress.
 * **Server-Determined Merchant Binding**: Payment dispatch validates `token_payload.merchant_id == trusted_merchant_id` and strictly verifies item IDs against `token_payload.allowed_item_ids`.
@@ -400,7 +400,7 @@ chmod +x scripts/deploy.sh
 
 ---
 
-## 🧪 Testing Suite
+##  Testing Suite
 
 The platform includes **101 automated test scenarios** (**100 passed, 1 skipped** when live Razorpay API keys are not in environment) covering concurrency stress, agent evaluation, capability token lifecycles, catalog immutability, fail-closed webhooks, production config security, UI simulator flows, and end-to-end payment:
 
@@ -436,7 +436,7 @@ python scripts/test_razorpay_live.py
 
 ---
 
-## 📡 API Reference
+##  API Reference
 
 | Method | Endpoint | Access Level | Description |
 | :--- | :--- | :---: | :--- |
@@ -467,11 +467,11 @@ python scripts/test_razorpay_live.py
 
 ---
 
-## 📊 Operator Dashboard & Credentials
+##  Operator Dashboard & Credentials
 
 The Architectural Blueprint dashboard provides real-time visibility into autonomous transactions with zero-latency telemetry:
 
-### 🔑 Demo Operator Credentials (For Evaluators & Judges)
+###  Demo Operator Credentials (For Evaluators & Judges)
 > **Notice**: *Demo-only evaluator credentials — not production secrets.*
 
 For evaluators, judges, and reviewers accessing the live deployed dashboard:
@@ -483,20 +483,20 @@ For evaluators, judges, and reviewers accessing the live deployed dashboard:
 
 > **Evaluator 1-Click Walkthrough**:
 > 1. Open the live dashboard: **[https://agentic-commerce-zyoy.onrender.com/dashboard](https://agentic-commerce-zyoy.onrender.com/dashboard)**.
-> 2. By default, the interface loads in **`👁️ GUEST OBSERVER`** mode allowing public aggregate stats inspection, live telemetry, and checkout simulation.
-> 3. Click the **`🔑 OPERATOR LOGIN`** button in the top right corner.
+> 2. By default, the interface loads in **` GUEST OBSERVER`** mode allowing public aggregate stats inspection, live telemetry, and checkout simulation.
+> 3. Click the **` OPERATOR LOGIN`** button in the top right corner.
 > 4. Enter Username: `Razorpay` and Password: `RazorPay@123456#` to authenticate.
 > 5. **Inspect Session Deep Dive**: Click any row in the **Live Audit Trail** table to view the full session provenance timeline, budget state, and payment records for that session.
-> 6. **Run Campaign**: Click **`🚀 RUN CAMPAIGN`** to trigger a 50-trial Monte Carlo A/B conversion simulation with real-time Chart.js visual telemetry.
+> 6. **Run Campaign**: Click **` RUN CAMPAIGN`** to trigger a 50-trial Monte Carlo A/B conversion simulation with real-time Chart.js visual telemetry.
 > 7. **Interactive Blueprint**: Visit **[https://agentic-commerce-zyoy.onrender.com/graph](https://agentic-commerce-zyoy.onrender.com/graph)** to inspect the force-directed D3 system topology.
 
-* **Dual-Mode Header**: Starts in `👁️ GUEST OBSERVER` mode for instant inspection; switches to `🛡️ OPERATOR` on login.
+* **Dual-Mode Header**: Starts in ` GUEST OBSERVER` mode for instant inspection; switches to ` OPERATOR` on login.
 * **Virtualized Audit Trail**: 48px row virtualization rendering smooth 120fps scrolling across 1,000+ continuous events.
-* **Interactive Checkout Simulator**: 4 one-click test chips (`⚡ Pass`, `⚡ Multi-Qty`, `⚡ Reject`, `⚡ Multi-Item`) for instant evaluation.
+* **Interactive Checkout Simulator**: 4 one-click test chips (` Pass`, ` Multi-Qty`, ` Reject`, ` Multi-Item`) for instant evaluation.
 * **Monte Carlo Campaign Analytics**: Empirical 95% Confidence Intervals, Standard Deviation ($\sigma$), and Basket Lift tracking.
 
 ---
 
-## 📄 License
+##  License
 
 Distributed under the **MIT License**. See `LICENSE` for more information.
