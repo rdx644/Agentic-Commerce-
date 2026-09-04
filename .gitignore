@@ -31,9 +31,11 @@ Thumbs.db
 
 # Testing
 .pytest_cache/
+.playwright-cli/
 htmlcov/
 .coverage
 
 # Logs & Cache
 *.log
 .vibecheck/
+

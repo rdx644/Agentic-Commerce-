@@ -1,9 +1,14 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "agentic-commerce"
 version = "0.1.0"
-description = "AI Growth & Agentic Commerce — Razorpay Buildathon Track 01"
+description = "AI Growth & Agentic Commerce - Razorpay Buildathon Track 01"
 requires-python = ">=3.11"
 readme = "README.md"
+license = { text = "MIT" }
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
