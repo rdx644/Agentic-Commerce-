@@ -787,6 +787,50 @@ p, span, label, input, select, button, table {
     font-size: 12px;
 }
 
+/* ── Auth Required Gate (Session Deep Dive) ─────────────────────────────── */
+
+.modal-auth-gate {
+    text-align: center;
+    padding: 32px 20px;
+    background: rgba(0, 20, 45, 0.7);
+    border: 1px dashed var(--measure-cyan);
+    margin: 4px 0;
+}
+
+.auth-gate-title {
+    color: var(--measure-cyan);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+}
+
+.auth-gate-desc {
+    color: var(--drafting-white);
+    font-size: 12px;
+    line-height: 1.6;
+    margin-bottom: 8px;
+    max-width: 440px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.auth-gate-sub {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 11px;
+    margin-bottom: 24px;
+}
+
+.auth-gate-btn {
+    min-width: 220px;
+    padding: 12px 24px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    margin: 0 auto;
+}
+
 /* ── Toast Notifications ────────────────────────────────────────────────── */
 
 .toast-container {

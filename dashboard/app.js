@@ -687,11 +687,53 @@ async function dispatchTestPayment(token, amount) {
 
 // ── Session Detail Modal ────────────────────────────────────────────────────
 
+function renderAuthRequiredModal(sessionId) {
+    const modalTitle = document.getElementById('modal-title');
+    if (modalTitle) modalTitle.textContent = 'SESSION DEEP DIVE';
+
+    const body = document.getElementById('modal-body');
+    pendingSessionRetry = sessionId;
+
+    const container = document.createElement('div');
+    container.className = 'modal-auth-gate';
+
+    const iconHeading = makeElement('h3', 'auth-gate-title', '🔒 Operator Authentication Required');
+
+    const p1 = makeElement('p', 'auth-gate-desc', 'Detailed session information contains protected payment, budget and audit data.');
+
+    const p2 = makeElement('p', 'auth-gate-sub', 'Please authenticate as an operator to continue.');
+
+    const loginBtn = makeElement('button', 'btn btn-primary auth-gate-btn', '🔑 Login as Operator');
+    loginBtn.type = 'button';
+    loginBtn.id = 'modal-login-operator-btn';
+
+    loginBtn.addEventListener('click', () => {
+        const loginModal = document.getElementById('login-modal');
+        if (loginModal) {
+            loginModal.classList.add('open');
+            setTimeout(() => {
+                document.getElementById('login-username')?.focus();
+            }, 50);
+        }
+    });
+
+    container.append(iconHeading, p1, p2, loginBtn);
+    body.replaceChildren(container);
+}
+
 async function openSessionDetail(sessionId) {
     const overlay = document.getElementById('modal-overlay');
     const body = document.getElementById('modal-body');
+    const modalTitle = document.getElementById('modal-title');
+    if (modalTitle) modalTitle.textContent = 'SESSION DEEP DIVE';
     overlay.classList.add('open');
     pendingSessionRetry = sessionId;
+
+    // Observer mode: immediately display operator authentication prompt without retry button
+    if (!authToken) {
+        renderAuthRequiredModal(sessionId);
+        return;
+    }
     
     // Skeleton Pulse for lazy-load instant visual feedback
     const skeleton = document.createElement('div');
@@ -699,7 +741,7 @@ async function openSessionDetail(sessionId) {
     const title = makeElement('h3', 'session-title', `SESSION PROVENANCE: ${sessionId}`);
     title.style.color = 'var(--measure-cyan)';
     title.style.marginBottom = '8px';
-    const subtitle = makeElement('p', '', 'Querying immutable cryptographic audit ledger...');
+    const subtitle = makeElement('p', '', 'Querying append-only audit trail...');
     subtitle.style.color = 'rgba(255,255,255,0.6)';
     subtitle.style.fontSize = '11px';
     subtitle.style.marginBottom = '16px';
@@ -714,7 +756,12 @@ async function openSessionDetail(sessionId) {
         const resp = await apiFetch(`/audit/session/${encodeURIComponent(sessionId)}`);
         if (!resp.ok) {
             if (resp.status === 401) {
-                throw new Error("Operator authorization required to inspect private session provenance.");
+                authToken = '';
+                sessionStorage.removeItem('agentic_auth_token');
+                localStorage.removeItem('agentic_auth_token');
+                updateAuthUI();
+                renderAuthRequiredModal(sessionId);
+                return;
             }
             throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
         }
@@ -733,14 +780,10 @@ async function openSessionDetail(sessionId) {
         const retryBtn = makeElement('button', 'btn btn-primary', '⚡ Retry');
         retryBtn.type = 'button';
         retryBtn.id = 'retry-session-btn';
-        const loginBtn = makeElement('button', 'btn', '🔑 Operator Login');
-        loginBtn.type = 'button';
-        loginBtn.id = 'open-login-btn';
-        btnGroup.append(retryBtn, loginBtn);
+        btnGroup.append(retryBtn);
         errContainer.append(errMsg, btnGroup);
         body.replaceChildren(errContainer);
         document.getElementById('retry-session-btn')?.addEventListener('click', () => openSessionDetail(sessionId));
-        document.getElementById('open-login-btn')?.addEventListener('click', () => document.getElementById('login-modal').classList.add('open'));
     }
 }
 
@@ -775,6 +818,7 @@ function renderSessionDetail(detail) {
 
 function closeModal() {
     document.getElementById('modal-overlay').classList.remove('open');
+    pendingSessionRetry = null;
 }
 
 // ── Init ────────────────────────────────────────────────────────────────────
@@ -915,9 +959,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // Reload data
             await initData();
-            // If user had a pending session modal open, reload it with fresh auth
-            if (pendingSessionRetry && document.getElementById('modal-overlay').classList.contains('open')) {
-                openSessionDetail(pendingSessionRetry);
+            // If user had a pending session modal, reload it with fresh auth
+            if (pendingSessionRetry) {
+                const sId = pendingSessionRetry;
+                pendingSessionRetry = null;
+                openSessionDetail(sId);
             }
         } catch(err) {
             document.getElementById('login-error').style.display = 'block';
